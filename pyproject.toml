@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ghostwatch"
+version = "0.1.0"
+description = "Satellite verification of government infrastructure projects"
+license = "MIT"
+authors = [{ name = "Xavier M. Puspus" }]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "earthengine-api>=1.4",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "pyarrow>=15.0",
+    "typer>=0.12",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/xmpuspus/ghostwatch"
+Repository = "https://github.com/xmpuspus/ghostwatch"
+
+[project.optional-dependencies]
+web = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+ghostwatch = "ghostwatch.cli:app"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

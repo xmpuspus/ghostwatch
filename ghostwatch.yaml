@@ -1,0 +1,6 @@
+ndbi_change_threshold: 0.10
+ndvi_change_threshold: 0.15
+bsi_change_threshold: 0.10
+ghost_confidence_threshold: 0.70
+satellite_buffer_meters: 500
+satellite_cloud_threshold: 20
