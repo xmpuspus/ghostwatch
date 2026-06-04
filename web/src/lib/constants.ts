@@ -1,7 +1,7 @@
 export const VERIFICATION_COLORS: Record<string, string> = {
   VERIFIED: "#3fb950",
   PARTIAL: "#e3b341",
-  INCONCLUSIVE: "#768d87",
+  INCONCLUSIVE: "#7aa6c9", // steel blue — "checked, no clear signal"; visible, neutral, not the teal accent
   GHOST_PROJECT: "#f0533f",
   UNVERIFIED: "#5a6663",
   PENDING: "#768d87",
