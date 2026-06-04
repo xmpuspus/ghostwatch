@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
-import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert } from "lucide-react";
+import { MapContainer, TileLayer, CircleMarker } from "react-leaflet";
+import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert, SatelliteDish, X } from "lucide-react";
 import {
   MAP_CENTER,
   MAP_ZOOM,
@@ -14,7 +14,8 @@ import {
   formatPeso,
   formatNumber,
 } from "@/lib/constants";
-import type { Project, VerificationStatus } from "@/types/project";
+import BeforeAfterSlider from "@/components/satellite/BeforeAfterSlider";
+import type { Project, VerificationStatus, VerificationResult } from "@/types/project";
 
 type MapStyle = "streets" | "satellite" | "light";
 
@@ -32,6 +33,8 @@ export default function ProjectMap() {
   const [loading, setLoading] = useState(true);
   const [mapStyle, setMapStyle] = useState<MapStyle>("satellite");
   const [activeFilter, setActiveFilter] = useState<VerificationStatus | "ALL">("ALL");
+  const [cases, setCases] = useState<VerificationResult[]>([]);
+  const [selected, setSelected] = useState<Project | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -52,7 +55,20 @@ export default function ProjectMap() {
       })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
+
+    // Satellite before/after tiles for the checked showcase — shown inline in the popup.
+    fetch("/data/cases.json")
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((resp) => setCases(resp?.data ?? []))
+      .catch(() => setCases([]));
   }, []);
+
+  // project_id -> its satellite check (tiles + dates), for the popup viewer.
+  const caseLookup = useMemo(() => {
+    const m = new Map<string, VerificationResult>();
+    for (const c of cases) m.set(c.project_id, c);
+    return m;
+  }, [cases]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { ALL: projects.length };
@@ -97,11 +113,8 @@ export default function ProjectMap() {
               fillOpacity: p.verification_status === "UNVERIFIED" ? 0.55 : 0.95,
               weight: 1,
             }}
-          >
-            <Popup>
-              <PopupCard project={p} />
-            </Popup>
-          </CircleMarker>
+            eventHandlers={{ click: () => setSelected(p) }}
+          />
         ))}
       </MapContainer>
 
@@ -223,15 +236,98 @@ export default function ProjectMap() {
           </span>
         </div>
       )}
+
+      {/* Satellite detail modal — opens on marker click */}
+      {selected && (
+        <SatelliteModal
+          project={selected}
+          caseData={caseLookup.get(selected.id)}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }
 
-function PopupCard({ project }: { project: Project }) {
-  const vcolor = VERIFICATION_COLORS[project.verification_status] ?? "#768d87";
+function SatelliteModal({
+  project,
+  caseData,
+  onClose,
+}: {
+  project: Project;
+  caseData?: VerificationResult;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <div className="min-w-[230px] p-1" style={{ fontFamily: "var(--font-body-stack)" }}>
-      <h3 className="mb-2 text-sm font-semibold leading-tight" style={{ color: "var(--color-text-primary)" }}>
+    <div
+      className="absolute inset-0 z-[2000] flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(6,9,10,0.72)" }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Satellite check"
+    >
+      <div
+        className="relative w-full max-w-[460px] overflow-hidden rounded"
+        style={{
+          backgroundColor: "var(--glass-bg-elevated)",
+          border: "1px solid var(--color-border-strong)",
+          boxShadow: "var(--glass-shadow-elevated)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded"
+          style={{ backgroundColor: "rgba(11,14,15,0.7)", color: "var(--color-text-secondary)" }}
+        >
+          <X size={16} />
+        </button>
+
+        {caseData ? (
+          <BeforeAfterSlider
+            beforeUrl={caseData.satellite_url_before}
+            afterUrl={caseData.satellite_url_after}
+            beforeDate={caseData.before_date}
+            afterDate={caseData.after_date}
+            height={300}
+            classification={project.verification_status}
+          />
+        ) : (
+          <div
+            className="flex h-[160px] flex-col items-center justify-center gap-2"
+            style={{ backgroundColor: "var(--color-surface)" }}
+          >
+            <SatelliteDish size={28} style={{ color: "var(--color-text-muted)" }} />
+            <span className="instrument-label">Not yet checked from space</span>
+            <span className="max-w-[260px] text-center text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              This bridge is mapped from the public record but has not been run through a
+              Sentinel-2 before/after check.
+            </span>
+          </div>
+        )}
+
+        <div className="p-4">
+          <PopupCard project={project} caseData={caseData} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PopupCard({ project, caseData }: { project: Project; caseData?: VerificationResult }) {
+  const vcolor = VERIFICATION_COLORS[project.verification_status] ?? "#768d87";
+  const checked = !!caseData || project.verification_status !== "UNVERIFIED";
+  return (
+    <div className="w-full" style={{ fontFamily: "var(--font-body-stack)" }}>
+      <h3 className="mb-2 pr-6 text-sm font-semibold leading-tight" style={{ color: "var(--color-text-primary)" }}>
         {project.title}
       </h3>
       <div className="mb-2 flex flex-wrap gap-1.5">
@@ -250,13 +346,13 @@ function PopupCard({ project }: { project: Project }) {
           <Row icon={<Calendar size={12} />} label="Completion" value={project.target_completion} />
         )}
       </div>
-      {project.verification_status !== "UNVERIFIED" && (
+      {checked && (
         <a
           href={`/verify?id=${project.id}`}
           className="mt-3 block font-mono text-[11px] font-semibold uppercase tracking-wider"
           style={{ color: "var(--color-accent)" }}
         >
-          View satellite check →
+          Open full satellite check →
         </a>
       )}
     </div>
