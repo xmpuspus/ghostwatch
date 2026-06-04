@@ -21,6 +21,15 @@ export default function CountUp({
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
+    // Respect reduced-motion: skip the count animation, show the final value.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setDisplay(end.toFixed(decimals));
+      return;
+    }
+
     const startTime = performance.now();
 
     const tick = (now: number) => {

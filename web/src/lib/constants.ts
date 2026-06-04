@@ -39,28 +39,28 @@ export const PROJECT_TYPE_COLORS: Record<string, string> = {
 
 export function formatPeso(amount: number): string {
   if (amount >= 1_000_000_000) {
-    return `PHP ${(amount / 1_000_000_000).toFixed(1)}B`;
+    return `₱${(amount / 1_000_000_000).toFixed(1)}B`;
   }
   if (amount >= 1_000_000) {
-    return `PHP ${(amount / 1_000_000).toFixed(1)}M`;
+    return `₱${(amount / 1_000_000).toFixed(1)}M`;
   }
-  return `PHP ${new Intl.NumberFormat("en-PH").format(amount)}`;
+  return `₱${new Intl.NumberFormat("en-PH").format(amount)}`;
 }
 
 export function formatCompact(amount: number): string {
   if (amount >= 1_000_000_000_000) {
-    return `PHP ${(amount / 1_000_000_000_000).toFixed(1)}T`;
+    return `₱${(amount / 1_000_000_000_000).toFixed(1)}T`;
   }
   if (amount >= 1_000_000_000) {
-    return `PHP ${(amount / 1_000_000_000).toFixed(1)}B`;
+    return `₱${(amount / 1_000_000_000).toFixed(1)}B`;
   }
   if (amount >= 1_000_000) {
-    return `PHP ${(amount / 1_000_000).toFixed(1)}M`;
+    return `₱${(amount / 1_000_000).toFixed(1)}M`;
   }
   if (amount >= 1_000) {
-    return `PHP ${(amount / 1_000).toFixed(0)}K`;
+    return `₱${(amount / 1_000).toFixed(0)}K`;
   }
-  return `PHP ${amount}`;
+  return `₱${amount}`;
 }
 
 export function formatNumber(n: number): string {
@@ -92,4 +92,4 @@ export const TILE_LAYERS = {
 };
 
 export const DISCLAIMER =
-  "Satellite reads are automated change-detection on free 10m Sentinel-2 imagery and can be wrong — bridges over water, narrow spans, and structures completed outside the imagery window are common reasons a real bridge shows little visible change. A result is a prompt for review, never proof of wrongdoing. Every case needs ground-truth investigation before any conclusion is drawn. All figures are from the public DPWH record.";
+  "Satellite reads are automated change-detection on free 10m Sentinel-2 imagery and can be wrong: bridges over water, narrow spans, and structures completed outside the imagery window are common reasons a real bridge shows little visible change. A result is a prompt for review, never proof of wrongdoing. Every case needs ground-truth investigation before any conclusion is drawn. All figures are from the public DPWH record.";

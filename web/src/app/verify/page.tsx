@@ -89,6 +89,21 @@ function VerifyContent() {
         className="flex w-full shrink-0 flex-col border-b md:w-[340px] md:border-b-0 md:border-r"
         style={{ borderColor: "var(--color-border)" }}
       >
+        {/* Page intro — gives first-time visitors context before the dense list */}
+        <div className="shrink-0 border-b px-5 py-4" style={{ borderColor: "var(--color-border)" }}>
+          <span className="instrument-label">Satellite verification</span>
+          <h1
+            className="mt-1 font-display text-lg font-bold leading-tight"
+            style={{ color: "var(--color-text-primary)" }}
+          >
+            Bridges checked from space
+          </h1>
+          <p className="mt-1 text-xs leading-snug" style={{ color: "var(--color-text-muted)" }}>
+            Completed DPWH bridges compared against Sentinel-2 before/after imagery. Pick a case to
+            see its satellite read.
+          </p>
+        </div>
+
         {/* Filter bar */}
         <div
           className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-2 border-b px-5 py-3"
@@ -103,7 +118,7 @@ function VerifyContent() {
                 setClassFilter(e.target.value);
                 setSelectedIdx(0);
               }}
-              className="rounded px-2 py-1 font-mono text-xs outline-none"
+              className="min-h-[32px] rounded px-2.5 py-1.5 font-mono text-xs"
               style={{
                 backgroundColor: "var(--color-surface)",
                 border: "1px solid var(--color-border)",
@@ -126,7 +141,8 @@ function VerifyContent() {
                     setMinConf(opt);
                     setSelectedIdx(0);
                   }}
-                  className="rounded px-2 py-0.5 font-mono text-[11px] transition-colors"
+                  aria-pressed={minConf === opt}
+                  className="min-h-[32px] rounded px-2.5 py-1.5 font-mono text-[11px] transition-colors"
                   style={{
                     backgroundColor: minConf === opt ? "var(--color-accent)" : "transparent",
                     color: minConf === opt ? "var(--color-text-inverted)" : "var(--color-text-muted)",
@@ -159,7 +175,7 @@ function VerifyContent() {
                 No cases match this filter
               </p>
               <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                Inconclusive checks have no detection confidence — try &ldquo;Any&rdquo;.
+                Inconclusive checks have no detection confidence. Try &ldquo;Any&rdquo;.
               </p>
             </div>
           )}
@@ -252,6 +268,29 @@ function VerifyContent() {
                 classification={selected.classification}
               />
 
+              {/* Why-it-looks-blank note, right where the blank image prompts the question */}
+              {selected.classification === "INCONCLUSIVE" && (
+                <div
+                  className="-mt-2 flex items-start gap-2 rounded-sm border-l-2 px-3 py-2 text-xs leading-snug"
+                  style={{
+                    borderColor: "var(--color-inconclusive)",
+                    backgroundColor: "var(--color-surface)",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  <HelpCircle
+                    size={14}
+                    className="mt-0.5 shrink-0"
+                    style={{ color: "var(--color-inconclusive)" }}
+                  />
+                  <span>
+                    No clear construction signal at 10m resolution. For a narrow span over water this
+                    is expected, and does not mean the bridge is missing. Reported as inconclusive,
+                    never as a ghost.
+                  </span>
+                </div>
+              )}
+
               <div className="grid gap-5 md:grid-cols-3">
                 <div className="card-elevated md:col-span-2" style={{ padding: "1.25rem" }}>
                   <SpectralBars
@@ -266,21 +305,12 @@ function VerifyContent() {
                 >
                   <ConfidenceMeter value={Math.round(selected.confidence * 100)} />
                   <span className="instrument-label">Detection confidence</span>
-                  {selected.classification === "INCONCLUSIVE" && (
-                    <span
-                      className="text-center text-[10px] leading-snug"
-                      style={{ color: "var(--color-text-muted)" }}
-                    >
-                      No construction signal at 10m resolution. For a narrow span over
-                      water this is expected — it does not mean the bridge is missing.
-                    </span>
-                  )}
                   {selected.data_source === "sar_proxy" && (
                     <span
                       className="text-center text-[10px]"
                       style={{ color: "var(--color-text-muted)" }}
                     >
-                      SAR proxy used — reduced accuracy
+                      SAR proxy used: reduced accuracy
                     </span>
                   )}
                 </div>

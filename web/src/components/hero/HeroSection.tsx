@@ -192,7 +192,7 @@ export default function HeroSection() {
           <Step
             n="01"
             title="Public bridge records"
-            body="Every DPWH bridge contract — location, budget, status, completion date — straight from the public transparency dataset."
+            body="Every DPWH bridge contract (location, budget, status, completion date), straight from the public transparency dataset."
           />
           <Step
             n="02"

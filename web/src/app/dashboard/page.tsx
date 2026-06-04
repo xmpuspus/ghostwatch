@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import { formatCompact, formatNumber, formatPercent, DISCLAIMER } from "@/lib/constants";
 import { api } from "@/lib/api";
+import Footer from "@/components/layout/Footer";
 import type { OverviewStats } from "@/types/project";
 
 interface ChartData {
@@ -72,7 +73,11 @@ export default function DashboardPage() {
   }, []);
 
   const topRegions = (charts?.budget_by_region ?? []).slice(0, 12);
-  const completionRegions = (charts?.regional ?? []).slice(0, 12);
+  // Sort by completion (lowest first) and keep every region, so the real outlier
+  // (e.g. Central Office at 25%) is shown, not sliced off by a top-N cut.
+  const completionRegions = [...(charts?.regional ?? [])].sort(
+    (a, b) => a.completion - b.completion,
+  );
   const checked = stats?.satellite?.total_verified ?? 0;
 
   return (
@@ -158,9 +163,20 @@ export default function DashboardPage() {
               {!topRegions.length ? (
                 <EmptyState />
               ) : (
+                <>
+                <p className="sr-only">
+                  Horizontal bar chart: total bridge contract value by region, top 12 regions, in
+                  pesos.
+                </p>
                 <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={topRegions} layout="vertical" margin={{ left: 8, right: 16 }}>
-                    <XAxis type="number" tickFormatter={(v) => formatCompact(v)} tick={AXIS} stroke={GRID} />
+                    <XAxis
+                      type="number"
+                      domain={[0, (dataMax: number) => dataMax * 1.05]}
+                      tickFormatter={(v) => formatCompact(v)}
+                      tick={AXIS}
+                      stroke={GRID}
+                    />
                     <YAxis type="category" dataKey="region" width={104} tick={AXIS} stroke={GRID} />
                     <Tooltip
                       cursor={{ fill: "rgba(45,212,191,0.06)" }}
@@ -179,6 +195,7 @@ export default function DashboardPage() {
                     <Bar dataKey="value" radius={[0, 3, 3, 0]} fill="var(--color-accent)" fillOpacity={0.9} />
                   </BarChart>
                 </ResponsiveContainer>
+                </>
               )}
             </Panel>
           </div>
@@ -188,6 +205,11 @@ export default function DashboardPage() {
             {!completionRegions.length ? (
               <EmptyState />
             ) : (
+              <>
+              <p className="sr-only">
+                Bar chart: share of bridges reported completed by region, all regions sorted from
+                lowest to highest completion rate.
+              </p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={completionRegions} margin={{ top: 8 }}>
                   <CartesianGrid strokeDasharray="2 4" stroke={GRID} vertical={false} />
@@ -210,6 +232,7 @@ export default function DashboardPage() {
                   <Bar dataKey="completion" fill="var(--color-accent)" fillOpacity={0.82} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              </>
             )}
           </Panel>
 
@@ -218,6 +241,11 @@ export default function DashboardPage() {
             {!charts?.yearly?.length ? (
               <EmptyState />
             ) : (
+              <>
+              <p className="sr-only">
+                Line chart: bridge contract value funded versus value reaching completed status, by
+                year from 2016 to 2025, in billions of pesos.
+              </p>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={charts.yearly} margin={{ top: 8, right: 12 }}>
                   <CartesianGrid strokeDasharray="2 4" stroke={GRID} vertical={false} />
@@ -242,6 +270,7 @@ export default function DashboardPage() {
                   <Line type="monotone" dataKey="completed" name="Completed" stroke="var(--color-verified)" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 2.5, fill: "var(--color-verified)" }} />
                 </LineChart>
               </ResponsiveContainer>
+              </>
             )}
           </Panel>
         </div>
@@ -250,6 +279,7 @@ export default function DashboardPage() {
           {DISCLAIMER}
         </p>
       </div>
+      <Footer />
     </div>
   );
 }

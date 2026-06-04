@@ -19,9 +19,17 @@ export default function ConfidenceMeter({ value, size = 100 }: ConfidenceMeterPr
   const arcLength = circumference * arcFraction;
 
   useEffect(() => {
+    const target = Math.min(100, Math.max(0, value));
+    // Respect reduced-motion: snap to the final value, skip the sweep.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      if (displayRef.current) displayRef.current.textContent = `${Math.round(target)}%`;
+      return;
+    }
     const start = performance.now();
     const duration = 1100;
-    const target = Math.min(100, Math.max(0, value));
     const tick = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);

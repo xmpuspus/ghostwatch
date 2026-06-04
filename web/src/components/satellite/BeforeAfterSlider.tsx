@@ -110,13 +110,6 @@ export default function BeforeAfterSlider({
       style={{ height, backgroundColor: "#000", border: "1px solid var(--color-border)" }}
       onMouseDown={startDrag}
       onTouchStart={startDrag}
-      onKeyDown={onKeyDown}
-      tabIndex={0}
-      role="slider"
-      aria-valuenow={Math.round(position)}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-label="Drag to compare before and after satellite imagery"
     >
       {beforeUrl && (
         <img
@@ -151,12 +144,19 @@ export default function BeforeAfterSlider({
         }}
       >
         <div
-          className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full"
+          className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full"
           style={{
             backgroundColor: "rgba(11,14,15,0.85)",
             border: "1.5px solid var(--color-accent)",
             cursor: "ew-resize",
           }}
+          onKeyDown={onKeyDown}
+          tabIndex={0}
+          role="slider"
+          aria-valuenow={Math.round(position)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Drag or use arrow keys to compare before and after satellite imagery"
         >
           <MoveHorizontal size={14} style={{ color: "var(--color-accent)" }} />
         </div>

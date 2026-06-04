@@ -25,13 +25,6 @@ const FILTERS: { label: string; value: VerificationStatus | "ALL" }[] = [
   { label: "No clear change", value: "INCONCLUSIVE" },
 ];
 
-const LEGEND: { label: string; value: string }[] = [
-  { label: "Construction detected", value: "VERIFIED" },
-  { label: "Partial change", value: "PARTIAL" },
-  { label: "No clear change", value: "INCONCLUSIVE" },
-  { label: "Not yet checked", value: "UNVERIFIED" },
-];
-
 export default function ProjectMap() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [totalMatching, setTotalMatching] = useState(0);
@@ -66,6 +59,11 @@ export default function ProjectMap() {
     for (const p of projects) c[p.verification_status] = (c[p.verification_status] ?? 0) + 1;
     return c;
   }, [projects]);
+
+  // Satellite-checked = everything that isn't "not yet checked". Derived so the
+  // count stays honest if the showcase set changes on a future bake.
+  const checkedCount =
+    (counts.VERIFIED ?? 0) + (counts.PARTIAL ?? 0) + (counts.INCONCLUSIVE ?? 0);
 
   const filtered = useMemo(
     () =>
@@ -130,7 +128,8 @@ export default function ProjectMap() {
               <button
                 key={opt.value}
                 onClick={() => setActiveFilter(opt.value)}
-                className="flex items-center justify-between gap-3 rounded px-2 py-1 text-left transition-colors"
+                aria-pressed={active}
+                className="flex min-h-[36px] items-center justify-between gap-3 rounded px-2.5 py-1.5 text-left transition-colors"
                 style={{
                   backgroundColor: active ? "var(--color-surface-elevated)" : "transparent",
                   border: active ? "1px solid var(--color-border-strong)" : "1px solid transparent",
@@ -152,10 +151,33 @@ export default function ProjectMap() {
             );
           })}
         </div>
+
+        {/* Not-yet-checked key — the gray dots that make up the rest of the record */}
+        <div className="mt-1 flex items-center gap-2 px-2.5">
+          <span
+            className="h-2 w-2 rounded-full"
+            style={{ backgroundColor: VERIFICATION_COLORS.UNVERIFIED ?? "#5a6663", opacity: 0.7 }}
+          />
+          <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+            Not yet checked
+          </span>
+        </div>
+
+        {/* Honest caveat + disclaimer — shown on every viewport */}
+        <p
+          className="mt-3 max-w-[200px] border-t pt-2 text-[10px] leading-snug"
+          style={{ color: "var(--color-text-muted)", borderColor: "var(--color-border)" }}
+        >
+          {formatNumber(checkedCount)} bridges checked from space; the rest map the full public
+          record. A satellite read is a prompt for review, not proof of wrongdoing. Figures from
+          the public DPWH record.
+        </p>
       </div>
 
       {/* Basemap toggle (top-right) */}
       <div
+        role="radiogroup"
+        aria-label="Base map style"
         className="absolute right-4 top-4 z-[1000] flex rounded p-0.5"
         style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
       >
@@ -163,7 +185,9 @@ export default function ProjectMap() {
           <button
             key={s}
             onClick={() => setMapStyle(s)}
-            className="rounded px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors"
+            role="radio"
+            aria-checked={mapStyle === s}
+            className="rounded px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors"
             style={{
               backgroundColor: mapStyle === s ? "var(--color-accent)" : "transparent",
               color: mapStyle === s ? "var(--color-text-inverted)" : "var(--color-text-muted)",
@@ -172,30 +196,6 @@ export default function ProjectMap() {
             {s}
           </button>
         ))}
-      </div>
-
-      {/* Legend (bottom-left) */}
-      <div
-        className="absolute bottom-5 left-4 z-[1000] hidden rounded p-3 sm:block"
-        style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
-      >
-        <p className="instrument-label mb-2">Satellite check</p>
-        <div className="flex flex-col gap-1.5">
-          {LEGEND.map((l) => (
-            <div key={l.value} className="flex items-center gap-2">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: VERIFICATION_COLORS[l.value] ?? "#5a6663" }}
-              />
-              <span className="text-[11px]" style={{ color: "var(--color-text-secondary)" }}>
-                {l.label}
-              </span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-2 max-w-[180px] text-[10px] leading-snug" style={{ color: "var(--color-text-muted)" }}>
-          16 bridges checked from space; the rest map the full public record.
-        </p>
       </div>
 
       {/* Loading */}
