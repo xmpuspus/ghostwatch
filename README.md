@@ -30,7 +30,7 @@ At 10-meter resolution, free optical satellite reliably picks up construction on
 |:---:|:---:|
 | ![Verify](docs/screenshots/verify.png) | ![Methodology](docs/screenshots/methodology.png) |
 
-<p align="center"><em>Dark cinematic UI: 11,584 geolocated bridges on a satellite basemap, budget and completion analytics, before/after spectral comparison, and the full methodology.</em></p>
+<p align="center"><em>A remote-sensing instrument console: 11,584 geolocated bridges on a satellite basemap, budget and completion analytics, before/after spectral comparison, and the full methodology.</em></p>
 
 ---
 

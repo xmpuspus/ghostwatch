@@ -1,4 +1,5 @@
 import { DISCLAIMER } from "@/lib/constants";
+import Footer from "@/components/layout/Footer";
 
 export default function MethodologyPage() {
   return (
@@ -7,18 +8,39 @@ export default function MethodologyPage() {
       style={{ backgroundColor: "var(--color-bg)" }}
     >
       <div className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="mb-2 text-3xl font-bold" style={{ color: "var(--color-text-primary)" }}>
+        <span className="instrument-label">Methodology &middot; Sentinel-2</span>
+        <h1 className="mb-2 mt-2 font-display text-3xl font-bold" style={{ color: "var(--color-text-primary)" }}>
           How It Works
         </h1>
         <p className="mb-10 text-base" style={{ color: "var(--color-text-muted)" }}>
           Tulay Pinoy uses free Sentinel-2 satellite imagery and spectral change detection
           to look for visible construction at Philippine bridge sites in the public DPWH
-          record. It is an open-source tool — the same pipeline runs on any country&apos;s
+          record. It is an open-source tool: the same pipeline runs on any country&apos;s
           infrastructure data.
         </p>
 
+        {/* Section index — deep-link anchors for confusion-driven visitors */}
+        <nav className="mb-10 flex flex-wrap gap-x-4 gap-y-1.5" aria-label="On this page">
+          {[
+            ["core-insight", "Core insight"],
+            ["spectral-indices", "Spectral indices"],
+            ["classification", "Classification"],
+            ["composite", "Composite strategy"],
+            ["limitations", "Known limitations"],
+            ["sar", "SAR cloud-gap"],
+          ].map(([id, label]) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              className="instrument-label transition-colors hover:text-[var(--color-accent)]"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
         {/* Core insight */}
-        <section className="mb-10">
+        <section id="core-insight" className="mb-10 scroll-mt-20">
           <h2 className="mb-3 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
             The Core Insight
           </h2>
@@ -27,13 +49,13 @@ export default function MethodologyPage() {
           </p>
           <div className="space-y-3">
             {[
-              { label: "Vegetation is cleared", detail: "NDVI decreases — less photosynthesis" },
-              { label: "Built-up surfaces appear", detail: "NDBI increases — concrete and asphalt reflect SWIR differently" },
+              { label: "Vegetation is cleared", detail: "NDVI decreases: less photosynthesis" },
+              { label: "Built-up surfaces appear", detail: "NDBI increases: concrete and asphalt reflect SWIR differently" },
               { label: "Bare soil is exposed", detail: "BSI increases during construction before surfacing" },
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex items-start gap-3 rounded-lg px-4 py-3"
+                className="flex items-start gap-3 rounded-[5px] px-4 py-3"
                 style={{ backgroundColor: "var(--color-surface)" }}
               >
                 <div
@@ -45,7 +67,7 @@ export default function MethodologyPage() {
                     {item.label}
                   </span>
                   <span className="ml-2 text-sm" style={{ color: "var(--color-text-muted)" }}>
-                    — {item.detail}
+                    {item.detail}
                   </span>
                 </div>
               </div>
@@ -54,7 +76,7 @@ export default function MethodologyPage() {
         </section>
 
         {/* Spectral indices */}
-        <section className="mb-10">
+        <section id="spectral-indices" className="mb-10 scroll-mt-20">
           <h2 className="mb-4 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
             Spectral Indices
           </h2>
@@ -96,12 +118,12 @@ export default function MethodologyPage() {
         </section>
 
         {/* Classification logic */}
-        <section className="mb-10">
+        <section id="classification" className="mb-10 scroll-mt-20">
           <h2 className="mb-4 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
             Classification Logic
           </h2>
           <div
-            className="overflow-hidden rounded-xl"
+            className="overflow-hidden rounded-[5px]"
             style={{ border: "1px solid var(--color-border)" }}
           >
             <table className="w-full text-sm">
@@ -141,7 +163,7 @@ export default function MethodologyPage() {
                   {
                     label: "No Clear Change",
                     condition: "Below all thresholds",
-                    interp: "Inconclusive — often a span below 10m resolution, not a missing bridge",
+                    interp: "Inconclusive: often a span below 10m resolution, not a missing bridge",
                     color: "var(--color-text-muted)",
                   },
                 ].map((row) => (
@@ -176,7 +198,7 @@ export default function MethodologyPage() {
           </div>
           <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
             On this site a completed bridge with no clear satellite signal is reported as
-            <strong> inconclusive — never flagged as a ghost</strong>. Bridge spans are usually
+            <strong> inconclusive, never flagged as a ghost</strong>. Bridge spans are usually
             narrow and over water, below what 10m optical imagery can resolve, so the absence of
             a signal is not evidence the bridge is missing. The open-source tool can flag
             completed-but-no-change projects for review (configurable confidence threshold,
@@ -186,7 +208,7 @@ export default function MethodologyPage() {
         </section>
 
         {/* Composite strategy */}
-        <section className="mb-10">
+        <section id="composite" className="mb-10 scroll-mt-20">
           <h2 className="mb-3 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
             Composite Strategy
           </h2>
@@ -196,7 +218,7 @@ export default function MethodologyPage() {
             period. The median eliminates clouds, shadows, and transient features.
           </p>
           <div
-            className="rounded-xl px-4 py-4 font-mono text-xs leading-relaxed"
+            className="rounded-[5px] px-4 py-4 font-mono text-xs leading-relaxed"
             style={{
               backgroundColor: "var(--color-surface)",
               border: "1px solid var(--color-border)",
@@ -214,7 +236,7 @@ export default function MethodologyPage() {
         </section>
 
         {/* Known limitations */}
-        <section className="mb-10">
+        <section id="limitations" className="mb-10 scroll-mt-20">
           <h2 className="mb-4 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
             Known Limitations
           </h2>
@@ -222,7 +244,7 @@ export default function MethodologyPage() {
             {[
               {
                 title: "Bridges over water",
-                detail: "A new span over a river or coast is a thin line of concrete inside a buffer that is mostly water and banks. Averaged over the area, the built-up signal can stay below threshold even when the bridge was genuinely completed. This is the single biggest reason a real bridge here may show little visible change — treat such reads as a prompt to look closer, not a finding.",
+                detail: "A new span over a river or coast is a thin line of concrete inside a buffer that is mostly water and banks. Averaged over the area, the built-up signal can stay below threshold even when the bridge was genuinely completed. This is the single biggest reason a real bridge here may show little visible change. Treat such reads as a prompt to look closer, not a finding.",
               },
               {
                 title: "Underground infrastructure",
@@ -247,7 +269,7 @@ export default function MethodologyPage() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="rounded-lg px-4 py-3"
+                className="rounded-[5px] px-4 py-3"
                 style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}
               >
                 <p className="mb-0.5 text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
@@ -262,7 +284,7 @@ export default function MethodologyPage() {
         </section>
 
         {/* SAR fallback */}
-        <section className="mb-10">
+        <section id="sar" className="mb-10 scroll-mt-20">
           <h2 className="mb-3 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
             SAR Cloud-Gap Filling
           </h2>
@@ -276,7 +298,7 @@ export default function MethodologyPage() {
 
         {/* Disclaimer */}
         <div
-          className="rounded-xl px-5 py-4"
+          className="rounded-[5px] px-5 py-4"
           style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}
         >
           <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--color-text-muted)" }}>
@@ -287,6 +309,7 @@ export default function MethodologyPage() {
           </p>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
@@ -314,7 +337,7 @@ function IndexCard({
 }) {
   return (
     <div
-      className="rounded-xl p-5"
+      className="rounded-[5px] p-5"
       style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}
     >
       <div className="mb-3 flex items-center gap-3">
@@ -329,7 +352,7 @@ function IndexCard({
         </span>
       </div>
       <div
-        className="mb-4 rounded-lg px-3 py-2 font-mono text-xs"
+        className="mb-4 rounded-[5px] px-3 py-2 font-mono text-xs"
         style={{ backgroundColor: "var(--color-bg)", color: "var(--color-text-secondary)" }}
       >
         {formula}
