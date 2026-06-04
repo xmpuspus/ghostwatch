@@ -55,3 +55,4 @@ web/docs/
 
 # Scratch / session artifacts
 tmp/
+.vercel

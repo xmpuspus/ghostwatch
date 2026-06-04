@@ -214,9 +214,7 @@ def build_charts(br: pd.DataFrame) -> dict:
 
     # Completion rate by region — bar
     total_by_reg = br[br["region"] != ""].groupby("region").size()
-    comp_by_reg = (
-        br[(br["region"] != "") & (br["status"] == "COMPLETED")].groupby("region").size()
-    )
+    comp_by_reg = br[(br["region"] != "") & (br["status"] == "COMPLETED")].groupby("region").size()
     regional = []
     for region in reg["region"]:
         t = int(total_by_reg.get(region, 0))
@@ -238,9 +236,7 @@ def build_charts(br: pd.DataFrame) -> dict:
     for year in sorted(yr["infra_year"].unique()):
         sub = yr[yr["infra_year"] == year]
         total_val = float(sub["contract_amount"].fillna(0).sum()) / 1e9
-        comp_val = (
-            float(sub[sub["status"] == "COMPLETED"]["contract_amount"].fillna(0).sum()) / 1e9
-        )
+        comp_val = float(sub[sub["status"] == "COMPLETED"]["contract_amount"].fillna(0).sum()) / 1e9
         yearly.append(
             {
                 "year": str(year),
@@ -290,7 +286,8 @@ def build_bridges_geojson(br: pd.DataFrame) -> dict:
         )
     fc = {"type": "FeatureCollection", "features": features}
     return envelope(
-        fc, meta={"query_time_ms": 0, "feature_count": len(features), "total_matching": len(features)},
+        fc,
+        meta={"query_time_ms": 0, "feature_count": len(features), "total_matching": len(features)},
         disclaimer=False,
     )
 
@@ -356,7 +353,7 @@ def main() -> None:
         conf = {pid: r["confidence"] for pid, r in showcase.items()}
         br["satellite_score"] = br["id"].map(conf)
 
-    print(f"Bridges: {len(br)}  with coords: {int(br[['lat','lng']].notna().all(axis=1).sum())}")
+    print(f"Bridges: {len(br)}  with coords: {int(br[['lat', 'lng']].notna().all(axis=1).sum())}")
     print(f"Showcase verifications merged: {len(showcase)}")
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -368,7 +365,10 @@ def main() -> None:
 
     manifest = {
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "source": "DPWH transparency data (HuggingFace bettergovph/dpwh-transparency-data), category == bridges",
+        "source": (
+            "DPWH transparency data (HuggingFace bettergovph/dpwh-transparency-data), "
+            "category == bridges"
+        ),
         "total_bridges": len(br),
         "bridges_with_coordinates": int(br[["lat", "lng"]].notna().all(axis=1).sum()),
         "total_contract_value_php": float(br["contract_amount"].fillna(0).sum()),
@@ -379,8 +379,8 @@ def main() -> None:
 
     for name, h in hashes.items():
         size = (OUT / name).stat().st_size
-        print(f"  {name:16} {size/1024:8.1f} KB  {h[:12]}")
-    print(f"Wrote {len(hashes)+1} files to {OUT}")
+        print(f"  {name:16} {size / 1024:8.1f} KB  {h[:12]}")
+    print(f"Wrote {len(hashes) + 1} files to {OUT}")
 
 
 if __name__ == "__main__":

@@ -4,53 +4,33 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Next.js 14](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
 
-Satellite verification of government infrastructure — see it from space.
+Satellite verification of public infrastructure: see whether it was built, from space.
 
-GhostWatch cross-references government contract records against Sentinel-2 satellite imagery to surface projects reported as complete with no visible construction evidence. It ingests 248,220 DPWH infrastructure projects totaling PHP 6.38 trillion, computes spectral change indices across before/after satellite composites, and classifies each site into one of five construction-evidence categories. Projects flagged for review are surfaced through a dark-themed web dashboard with before/after satellite sliders, an interactive map of all 214,747 geolocated sites, and regional analytics.
+GhostWatch is an open-source tool. Point it at a government's infrastructure records and it cross-references each project against free Sentinel-2 satellite imagery, computing before/after spectral change to look for visible construction. It ships as a Python pipeline, a FastAPI backend, and a Next.js dashboard you can clone and run locally against the full 248,220-project Philippine DPWH dataset (PHP 6.38 trillion in contracts, 214,747 geolocated sites).
 
-<p align="center">
-  <img src="docs/demo/tour.gif" alt="GhostWatch Demo" width="800">
-</p>
-
-<p align="center"><em>248,220 real DPWH projects — satellite map explorer, budget analytics, spectral methodology, and regional breakdown across 18 regions and PHP 6.38 trillion in contracts.</em></p>
-
-### Satellite Verification
+**Live: [tulaypinoy.ph](https://tulaypinoy.ph)** — a curated, fully static, bridges-only build of this tool, deployed on Vercel with no backend. Every one of the Philippines' 12,558 DPWH bridge projects (PHP 382.4 billion), mapped from the public record, plus a Sentinel-2 before/after showcase over 16 real completed bridges. The Python pipeline runs at build time and bakes real data into static JSON and PNG the site reads directly off the edge. A few months ago this was an offline tool anyone could clone and deploy; this is what deploying it looks like.
 
 <p align="center">
-  <img src="docs/demo/construction-timeline.gif" alt="Construction Detected from Satellite" width="800">
+  <img src="docs/demo/tour.gif" alt="Tulay Pinoy live tour" width="800">
 </p>
 
-<p align="center"><em>Real construction is visible from space — Panguil Bay Bridge (PHP 6.7B) goes from open water to a completed span between 2020 and 2024.</em></p>
+<p align="center"><em><a href="https://tulaypinoy.ph">tulaypinoy.ph</a> — 12,558 DPWH bridges mapped from public data, with a real Sentinel-2 before/after showcase.</em></p>
 
-<p align="center">
-  <img src="docs/demo/ghost-timeline.gif" alt="Ghost Project Satellite Timeline" width="800">
-</p>
+### What the satellite actually shows
 
-<p align="center"><em>Ghost projects are not — 4 completed projects totaling PHP 6.3B show zero visible construction activity in the same period.</em></p>
-
-<p align="center">
-  <img src="docs/demo/before-after.gif" alt="Before/After Satellite Comparison" width="800">
-</p>
-
-<p align="center"><em>Side-by-side comparison — 3 projects with visible construction vs 3 flagged projects with no detectable change between 2020 and 2024.</em></p>
-
-<p align="center">
-  <img src="docs/demo/verify.gif" alt="Satellite Verification UI" width="800">
-</p>
-
-<p align="center"><em>Before/after satellite slider with real Sentinel-2 imagery, spectral index changes (NDBI/NDVI/BSI), and confidence scoring per project.</em></p>
+At 10-meter resolution, free optical satellite reliably picks up construction on large land footprints (interchanges, bypass embankments) but often cannot resolve a narrow bridge span over water: the built-up signal is swamped by a buffer that is mostly water and banks. So the showcase reports three honest states, construction detected, partial change, and no clear change (inconclusive), and never labels a real, completed bridge a "ghost." A satellite read is a prompt for review, not a verdict. Of the 16 bridges checked, 1 shows clear construction, 6 show partial change, and 9 fall below what 10-meter imagery can resolve.
 
 ### Screenshots
 
 | Interactive Map | Analytics Dashboard |
 |:---:|:---:|
-| ![Map view](docs/screenshots/ghostwatch-map.png) | ![Dashboard](docs/screenshots/ghostwatch-dashboard.png) |
+| ![Map view](docs/screenshots/map.png) | ![Dashboard](docs/screenshots/dashboard.png) |
 
-| Hero Landing | Methodology |
+| Satellite Showcase | Methodology |
 |:---:|:---:|
-| ![Hero](docs/screenshots/ghostwatch-hero.png) | ![Methodology](docs/screenshots/ghostwatch-methodology.png) |
+| ![Verify](docs/screenshots/verify.png) | ![Methodology](docs/screenshots/methodology.png) |
 
-<p align="center"><em>Dark cinematic UI — satellite map overlay, real-time budget charts, spectral index reference, and animated project counters.</em></p>
+<p align="center"><em>Dark cinematic UI: 11,584 geolocated bridges on a satellite basemap, budget and completion analytics, before/after spectral comparison, and the full methodology.</em></p>
 
 ---
 
@@ -151,6 +131,30 @@ ghostwatch verify 14.5995 120.9842 \
 ghostwatch serve           # API on :8000
 cd web && npm run dev      # UI on :3000
 ```
+
+---
+
+## Live deployment: tulaypinoy.ph
+
+[tulaypinoy.ph](https://tulaypinoy.ph) is a separate outcome from the local tool above: a curated, **bridges-only, fully static** snapshot served by Vercel with no backend. The Python pipeline runs once at build time and bakes real DPWH + satellite data into static files the Next.js app reads directly.
+
+```bash
+# 1. Bake the bridges dataset (real DPWH parquet -> static JSON, no GEE needed)
+python3 scripts/bake_bridges.py
+#   -> web/public/data/{overview,charts,bridges,cases}.json  (+ manifest)
+
+# 2. Bake the satellite showcase (Sentinel-2 before/after over 16 real bridges)
+GHOSTWATCH_EE_KEY=/path/to/ee-key.json python3 scripts/bake_satellite.py
+#   -> web/public/data/tiles/<id>/{before,after}_{rgb,ndbi}.png
+#   -> data/showcase/verifications.json   (then re-run bake_bridges to merge)
+python3 scripts/bake_bridges.py
+
+# 3. Build the static export and deploy
+cd web && npm run build    # output: 'export' -> web/out/
+vercel deploy --prod       # or push to main (git auto-deploy, rootDir=web)
+```
+
+The frontend ([`web/`](web/)) is the same dashboard as the local tool, switched to `output: 'export'` and reading `/data/*` instead of the API. `web/vercel.json` adds the security headers and edge caching. No mock data is used anywhere — every published number is recomputed from the DPWH parquet, and every satellite read is real Sentinel-2 model output, curated honestly (no real bridge is labeled a ghost). See [`scripts/bake_bridges.py`](scripts/bake_bridges.py) and [`scripts/bake_satellite.py`](scripts/bake_satellite.py).
 
 ---
 

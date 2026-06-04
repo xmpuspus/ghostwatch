@@ -88,9 +88,7 @@ def init_gee():
             ee.Initialize(creds)
             print(f"GEE initialized via service account: {key['client_email']}")
             return ee
-    raise SystemExit(
-        "No GEE service-account key found. Set GHOSTWATCH_EE_KEY to a key JSON path."
-    )
+    raise SystemExit("No GEE service-account key found. Set GHOSTWATCH_EE_KEY to a key JSON path.")
 
 
 def composite(ee, region, start, end):
@@ -146,7 +144,8 @@ def main():
                 ndbi = swir.subtract(nir).divide(swir.add(nir)).rename("NDBI")
                 ndvi = nir.subtract(red).divide(nir.add(red)).rename("NDVI")
                 bsi = (
-                    swir.add(red).subtract(nir.add(blue))
+                    swir.add(red)
+                    .subtract(nir.add(blue))
                     .divide(swir.add(red).add(nir.add(blue)))
                     .rename("BSI")
                 )
@@ -176,18 +175,22 @@ def main():
                 rgb_ok = export_png(rgb_url, tile_dir / f"{label_short(label)}_rgb.png")
                 ndbi_ok = export_png(ndbi_url, tile_dir / f"{label_short(label)}_ndbi.png")
 
-                stats = ee.Image([ndbi, ndvi, bsi]).reduceRegion(
-                    reducer=ee.Reducer.mean(), geometry=region, scale=10, maxPixels=1e7
-                ).getInfo()
+                stats = (
+                    ee.Image([ndbi, ndvi, bsi])
+                    .reduceRegion(
+                        reducer=ee.Reducer.mean(), geometry=region, scale=10, maxPixels=1e7
+                    )
+                    .getInfo()
+                )
                 metrics[label] = {
                     "ndbi": stats.get("NDBI"),
                     "ndvi": stats.get("NDVI"),
                     "bsi": stats.get("BSI"),
                 }
-                print(
-                    f"  {label}: RGB={'ok' if rgb_ok else 'FAIL'} NDBI={'ok' if ndbi_ok else 'FAIL'}"
-                    f"  ndbi={fmt(stats.get('NDBI'))} ndvi={fmt(stats.get('NDVI'))} bsi={fmt(stats.get('BSI'))}"
-                )
+                n, v, b = fmt(stats.get("NDBI")), fmt(stats.get("NDVI")), fmt(stats.get("BSI"))
+                rgb_s = "ok" if rgb_ok else "FAIL"
+                ndbi_s = "ok" if ndbi_ok else "FAIL"
+                print(f"  {label}: RGB={rgb_s} NDBI={ndbi_s}  ndbi={n} ndvi={v} bsi={b}")
                 if not (rgb_ok and ndbi_ok) or stats.get("NDBI") is None:
                     ok = False
 

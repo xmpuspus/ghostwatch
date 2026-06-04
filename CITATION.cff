@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+title: "GhostWatch — satellite verification of public infrastructure"
+message: "If you use this software or its data, please cite it."
+type: software
+authors:
+  - given-names: Xavier
+    family-names: Puspus
+    email: xpuspus@gmail.com
+repository-code: "https://github.com/xmpuspus/ghostwatch"
+url: "https://tulaypinoy.ph"
+abstract: >-
+  GhostWatch cross-references public government infrastructure records against
+  free Sentinel-2 satellite imagery, computing before/after spectral change
+  (NDBI, NDVI, BSI) to look for visible construction. tulaypinoy.ph is a static,
+  bridges-only deployment covering all 12,558 DPWH bridge projects in the
+  Philippines, with a curated Sentinel-2 before/after showcase.
+keywords:
+  - satellite
+  - Sentinel-2
+  - open-data
+  - infrastructure
+  - civic-tech
+  - Philippines
+  - DPWH
+  - remote-sensing
+  - Google Earth Engine
+license: MIT
+version: "1.0.0"
+date-released: "2026-06-04"

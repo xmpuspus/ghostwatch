@@ -139,10 +139,10 @@ export default function MethodologyPage() {
                     color: "var(--color-partial)",
                   },
                   {
-                    label: "No Change",
+                    label: "No Clear Change",
                     condition: "Below all thresholds",
-                    interp: "No detectable construction activity",
-                    color: "var(--color-ghost)",
+                    interp: "Inconclusive — often a span below 10m resolution, not a missing bridge",
+                    color: "var(--color-text-muted)",
                   },
                 ].map((row) => (
                   <tr
@@ -175,8 +175,13 @@ export default function MethodologyPage() {
             </table>
           </div>
           <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
-            Flag determination applies only to projects marked &quot;completed&quot; by the reporting
-            agency. &quot;No Change&quot; with confidence ≥ 0.70 triggers a review flag.
+            On this site a completed bridge with no clear satellite signal is reported as
+            <strong> inconclusive — never flagged as a ghost</strong>. Bridge spans are usually
+            narrow and over water, below what 10m optical imagery can resolve, so the absence of
+            a signal is not evidence the bridge is missing. The open-source tool can flag
+            completed-but-no-change projects for review (configurable confidence threshold,
+            default 0.70); for bridges that capability is deliberately held back in favor of an
+            honest &quot;inconclusive&quot;.
           </p>
         </section>
 

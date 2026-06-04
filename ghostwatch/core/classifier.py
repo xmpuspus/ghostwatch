@@ -85,16 +85,23 @@ def is_ghost_project(
     status: str,
     classification: ChangeClass,
     confidence: float,
-    threshold: float = 0.70,
+    threshold: float | None = None,
 ) -> tuple[bool, str]:
     """Determine if a project should be flagged for review.
 
     A project is flagged when it is reported as completed but satellite
     analysis shows no evidence of construction activity.
 
+    When ``threshold`` is None the configurable ``ghost_confidence_threshold``
+    setting is used (default 0.70), so the documented threshold is the one that
+    actually drives the flag.
+
     Returns:
         (flagged, reason_string)
     """
+    if threshold is None:
+        threshold = get_settings().ghost_confidence_threshold
+
     if status != "completed":
         return False, "project_not_completed"
 
