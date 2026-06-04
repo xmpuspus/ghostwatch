@@ -33,9 +33,9 @@ const FILTERS: { label: string; value: VerificationStatus | "ALL" }[] = [
 function makeReticleIcon(color: string) {
   return L.divIcon({
     className: "gw-reticle-wrap",
-    html: `<div class="gw-reticle"><span class="gw-pulse" style="--c:${color}"></span><svg width="22" height="22" viewBox="0 0 22 22" style="overflow:visible"><circle cx="11" cy="11" r="7" fill="none" stroke="${color}" stroke-width="1.6"/><circle cx="11" cy="11" r="2.2" fill="${color}"/><line x1="11" y1="0.5" x2="11" y2="4.5" stroke="${color}" stroke-width="1.6"/><line x1="11" y1="17.5" x2="11" y2="21.5" stroke="${color}" stroke-width="1.6"/><line x1="0.5" y1="11" x2="4.5" y2="11" stroke="${color}" stroke-width="1.6"/><line x1="17.5" y1="11" x2="21.5" y2="11" stroke="${color}" stroke-width="1.6"/></svg></div>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
+    html: `<div class="gw-reticle"><span class="gw-pulse" style="--c:${color}"></span><svg width="26" height="26" viewBox="0 0 26 26" style="overflow:visible"><circle cx="13" cy="13" r="9.5" fill="rgba(11,14,15,0.64)"/><circle cx="13" cy="13" r="7.5" fill="none" stroke="${color}" stroke-width="1.8"/><circle cx="13" cy="13" r="2.4" fill="${color}"/><line x1="13" y1="1" x2="13" y2="5.5" stroke="${color}" stroke-width="1.8"/><line x1="13" y1="20.5" x2="13" y2="25" stroke="${color}" stroke-width="1.8"/><line x1="1" y1="13" x2="5.5" y2="13" stroke="${color}" stroke-width="1.8"/><line x1="20.5" y1="13" x2="25" y2="13" stroke="${color}" stroke-width="1.8"/></svg></div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
   });
 }
 
