@@ -34,9 +34,9 @@ const BARS: Omit<SpectralBar, "before" | "after">[] = [
 ];
 
 function deltaColor(delta: number, positiveIsBuiltUp: boolean): string {
-  if (Math.abs(delta) < 0.02) return "#6b7280";
+  if (Math.abs(delta) < 0.02) return "#768d87";
   const isBuiltUp = positiveIsBuiltUp ? delta > 0 : delta < 0;
-  return isBuiltUp ? "#3b82f6" : "#22c55e";
+  return isBuiltUp ? "#2dd4bf" : "#3fb950";
 }
 
 function formatDelta(v: number): string {
@@ -49,12 +49,7 @@ export default function SpectralBars({ ndbi_change, ndvi_change, bsi_change }: S
 
   return (
     <div className="space-y-3">
-      <h4
-        className="text-[10px] font-semibold uppercase tracking-wider"
-        style={{ color: "var(--color-text-muted)" }}
-      >
-        Spectral Index Changes
-      </h4>
+      <h4 className="instrument-label">Spectral index changes</h4>
       {BARS.map((bar, i) => {
         const delta = changes[i];
         const color = deltaColor(delta, bar.positiveIsBuiltUp);
@@ -82,7 +77,6 @@ export default function SpectralBars({ ndbi_change, ndvi_change, bsi_change }: S
                 style={{
                   width: `${pct}%`,
                   backgroundColor: color,
-                  boxShadow: `0 0 8px ${color}66`,
                   marginLeft: delta < 0 ? `${100 - pct}%` : "0",
                 }}
               />
@@ -99,7 +93,7 @@ export default function SpectralBars({ ndbi_change, ndvi_change, bsi_change }: S
         );
       })}
       <p className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-        Blue = built-up increase. Green = vegetation increase. White line = detection threshold.
+        Teal = built-up increase. Green = vegetation increase. Line = detection threshold.
       </p>
     </div>
   );

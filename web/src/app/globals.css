@@ -2,70 +2,135 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Tulay Pinoy — "Sentinel Instrument" design system.
+  A remote-sensing console: charcoal ground, phosphor-teal accent, cool paper
+  text. Flat opaque panels with hairline borders (no frosted glass), mono for
+  measured data, a faint graticule field. Distinctive and quiet so the satellite
+  imagery is the only loud thing on screen.
+*/
+
 :root {
-  /* Dark-first: GhostWatch is always dark */
-  --color-bg: #0a0f1a;
-  --color-bg-secondary: #0f1726;
-  --color-surface: #141c2e;
-  --color-surface-elevated: #1a2440;
-  --color-text-primary: #e2e8f0;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
-  --color-text-inverted: #0f172a;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-subtle: rgba(255, 255, 255, 0.04);
-  --color-accent: #3b82f6;
-  --color-accent-hover: #60a5fa;
+  /* Ground */
+  --color-bg: #0b0e0f;
+  --color-bg-secondary: #0f1416;
+  --color-surface: #14191b;
+  --color-surface-elevated: #1b2225;
+  --color-text-primary: #e6edea;
+  --color-text-secondary: #a8b3b0;
+  --color-text-muted: #6b7775;
+  --color-text-inverted: #06100f;
+  --color-border: rgba(230, 237, 234, 0.1);
+  --color-border-subtle: rgba(230, 237, 234, 0.05);
+  --color-border-strong: rgba(230, 237, 234, 0.2);
 
-  /* Status */
-  --color-verified: #22c55e;
-  --color-ghost: #ef4444;
-  --color-partial: #f59e0b;
-  --color-pending: #6b7280;
-  --color-ongoing: #3b82f6;
+  /* Phosphor-teal accent — the one chrome color */
+  --color-accent: #2dd4bf;
+  --color-accent-hover: #5eead4;
+  --accent-dim: rgba(45, 212, 191, 0.14);
+  --accent-line: rgba(45, 212, 191, 0.4);
 
-  /* Glass system */
-  --glass-bg: rgba(14, 20, 33, 0.85);
-  --glass-bg-elevated: rgba(20, 28, 46, 0.95);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --glass-shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.6);
+  /* Semantic data colors (distinct from the teal accent) */
+  --color-verified: #3fb950;
+  --color-ghost: #f0533f;
+  --color-partial: #e3b341;
+  --color-pending: #768d87;
+  --color-inconclusive: #768d87;
+  --color-ongoing: #2dd4bf;
 
-  /* Badge severity */
-  --badge-critical-bg: rgba(239, 68, 68, 0.12);
-  --badge-critical-text: #ef4444;
-  --badge-high-bg: rgba(234, 88, 12, 0.12);
-  --badge-high-text: #f97316;
-  --badge-medium-bg: rgba(245, 158, 11, 0.12);
-  --badge-medium-text: #f59e0b;
-  --badge-low-bg: rgba(34, 197, 94, 0.12);
-  --badge-low-text: #22c55e;
+  /* Instrument "panel" system (replaces frosted glass) */
+  --glass-bg: rgba(17, 23, 25, 0.92);
+  --glass-bg-elevated: rgba(22, 29, 32, 0.97);
+  --glass-border: rgba(230, 237, 234, 0.1);
+  --glass-shadow: 0 1px 0 rgba(230, 237, 234, 0.04), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --glass-shadow-elevated: 0 1px 0 rgba(230, 237, 234, 0.05), 0 16px 48px rgba(0, 0, 0, 0.6);
+
+  /* Fonts */
+  --font-display-stack: var(--font-display), "Archivo", system-ui, sans-serif;
+  --font-body-stack: var(--font-body), "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono-stack: var(--font-mono), "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius: 5px;
+  --radius-lg: 8px;
 }
 
 /* Base */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-text-primary);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body-stack);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Faint graticule field — hairlines at ~2% so chrome reads like a map plate */
+  background-image:
+    linear-gradient(rgba(230, 237, 234, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230, 237, 234, 0.022) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
 }
 
-/* Glass panel */
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display-stack);
+  letter-spacing: -0.01em;
+}
+
+.font-mono, .stat-value, .coord {
+  font-family: var(--font-mono-stack);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-value {
+  font-weight: 600;
+}
+
+/* Instrument micro-label: uppercase mono, tracked out, like a console legend */
+.instrument-label {
+  font-family: var(--font-mono-stack);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+/* Hairline rule */
+.hairline {
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Accessibility: a visible focus ring on every interactive element */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Panels — flat, opaque, document-like (no frosted glass) */
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
 .glass-panel {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  border-radius: 1rem;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
 }
 
 .glass-panel-elevated {
   background: var(--glass-bg-elevated);
   border: 1px solid var(--glass-border);
-  border-radius: 1rem;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  border-radius: var(--radius-lg);
   box-shadow: var(--glass-shadow-elevated);
 }
 
@@ -73,130 +138,105 @@ body {
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: var(--radius);
   padding: 1rem;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .card:hover {
-  box-shadow: var(--glass-shadow);
-  border-color: var(--color-accent);
+  border-color: var(--color-border-strong);
 }
 
 .card-elevated {
-  background: var(--color-surface-elevated);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: var(--radius);
   padding: 1rem;
-  box-shadow: var(--glass-shadow);
+  position: relative;
 }
 
-/* Buttons */
+/* Buttons — solid, crisp, no neon glow */
 .btn-primary {
   background: var(--color-accent);
-  color: white;
-  padding: 0.5rem 1.25rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  color: var(--color-text-inverted);
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius);
+  font-family: var(--font-mono-stack);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, transform 0.08s ease;
 }
 
 .btn-primary:hover {
   background: var(--color-accent-hover);
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
 }
 
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: translateY(1px);
 }
 
 .btn-ghost {
   background: transparent;
   color: var(--color-text-secondary);
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.5rem;
-  transition: background 0.15s ease, color 0.15s ease;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius);
+  font-family: var(--font-mono-stack);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--color-border-strong);
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 
 .btn-ghost:hover {
   background: var(--color-border-subtle);
   color: var(--color-text-primary);
+  border-color: var(--color-accent);
 }
 
-/* Badges */
+/* Badges — stamped tags: rectangular, mono, tracked */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
+  gap: 0.3rem;
+  padding: 0.18rem 0.45rem;
+  border-radius: 3px;
+  font-family: var(--font-mono-stack);
   font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  border: 1px solid currentColor;
+  line-height: 1.1;
 }
 
-.badge-verified {
-  background: rgba(34, 197, 94, 0.12);
-  color: var(--color-verified);
-}
-
-.badge-ghost {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--color-ghost);
-}
-
-.badge-partial {
-  background: rgba(245, 158, 11, 0.12);
-  color: var(--color-partial);
-}
-
-.badge-pending {
-  background: rgba(107, 114, 128, 0.12);
-  color: var(--color-pending);
-}
+.badge-verified { color: var(--color-verified); }
+.badge-ghost { color: var(--color-ghost); }
+.badge-partial { color: var(--color-partial); }
+.badge-pending { color: var(--color-pending); }
 
 /* Satellite comparison slider */
 .satellite-comparison {
   position: relative;
   overflow: hidden;
-  border-radius: 0.75rem;
+  border-radius: var(--radius);
   cursor: ew-resize;
   user-select: none;
 }
 
-.satellite-comparison .divider {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: white;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
-  z-index: 10;
-  cursor: ew-resize;
-}
-
-/* Stat values */
-.stat-value {
-  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Leaflet dark overrides */
+/* Leaflet dark overrides — charcoal canvas, instrument popups */
 .leaflet-container {
   background: var(--color-bg) !important;
-  border-radius: 0.75rem;
+  border-radius: 0;
   z-index: 1;
+  font-family: var(--font-body-stack) !important;
 }
 
 .leaflet-popup-content-wrapper {
   background: var(--glass-bg-elevated) !important;
-  backdrop-filter: blur(20px) !important;
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 0.75rem !important;
+  border: 1px solid var(--color-border-strong) !important;
+  border-radius: var(--radius) !important;
   box-shadow: var(--glass-shadow-elevated) !important;
   color: var(--color-text-primary) !important;
 }
@@ -209,42 +249,37 @@ body {
   color: var(--color-text-muted) !important;
 }
 
+.leaflet-bar a {
+  background: var(--color-surface) !important;
+  color: var(--color-text-secondary) !important;
+  border-color: var(--color-border) !important;
+}
+
 /* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+/* Motion — reserved for a few intentional moments */
+@keyframes scanSweep {
+  0% { transform: translateY(-30%); opacity: 0; }
+  10% { opacity: 0.9; }
+  90% { opacity: 0.9; }
+  100% { transform: translateY(130%); opacity: 0; }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+@keyframes reticlePulse {
+  0% { box-shadow: 0 0 0 0 var(--accent-line); }
+  70% { box-shadow: 0 0 0 10px rgba(45, 212, 191, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(45, 212, 191, 0); }
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-}
-
-/* Skeleton loading */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -258,6 +293,15 @@ body {
     var(--color-surface) 75%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 0.375rem;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

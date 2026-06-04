@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -17,25 +16,9 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import {
-  formatCompact,
-  formatNumber,
-  formatPercent,
-  DISCLAIMER,
-} from "@/lib/constants";
+import { formatCompact, formatNumber, formatPercent, DISCLAIMER } from "@/lib/constants";
 import { api } from "@/lib/api";
 import type { OverviewStats } from "@/types/project";
-
-const stagger = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.07 } },
-};
-const fadeUp = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.35 } },
-};
-
-const EMPTY_MSG = "No data — run scripts/bake_bridges.py to bake the dataset.";
 
 interface ChartData {
   status_dist: { name: string; status: string; value: number; color: string }[];
@@ -44,37 +27,37 @@ interface ChartData {
   yearly: { year: string; value: number; completed: number; count: number }[];
 }
 
-function EmptyState() {
+const AXIS = { fontSize: 11, fill: "var(--color-text-muted)", fontFamily: "var(--font-mono-stack)" };
+const GRID = "rgba(230,237,234,0.07)";
+
+function Tip({ rows, label }: { rows: { name: string; value: string; color?: string }[]; label?: string }) {
   return (
     <div
-      className="flex h-[220px] items-center justify-center rounded-xl"
-      style={{ backgroundColor: "var(--color-bg-secondary)" }}
+      className="rounded px-3 py-2 text-xs"
+      style={{
+        backgroundColor: "var(--glass-bg-elevated)",
+        border: "1px solid var(--color-border-strong)",
+        color: "var(--color-text-primary)",
+        boxShadow: "var(--glass-shadow-elevated)",
+      }}
     >
-      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-        {EMPTY_MSG}
-      </p>
+      {label && <p className="mb-1 font-semibold">{label}</p>}
+      {rows.map((r, i) => (
+        <p key={i} className="flex items-center gap-2" style={{ color: "var(--color-text-secondary)" }}>
+          {r.color && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: r.color }} />}
+          {r.name}: <span className="stat-value" style={{ color: "var(--color-text-primary)" }}>{r.value}</span>
+        </p>
+      ))}
     </div>
   );
 }
 
-function DarkTooltip({ payload, label }: { payload?: { name: string; value: number; color?: string }[]; label?: string }) {
-  if (!payload?.length) return null;
+function EmptyState() {
   return (
-    <div
-      className="rounded-lg border px-3 py-2 text-xs shadow-xl"
-      style={{
-        backgroundColor: "var(--glass-bg-elevated)",
-        borderColor: "var(--glass-border)",
-        color: "var(--color-text-primary)",
-        backdropFilter: "blur(16px)",
-      }}
-    >
-      {label && <p className="mb-1 font-semibold">{label}</p>}
-      {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color ?? "var(--color-text-primary)" }}>
-          {p.name}: {typeof p.value === "number" ? formatNumber(p.value) : p.value}
-        </p>
-      ))}
+    <div className="flex h-[220px] items-center justify-center" style={{ backgroundColor: "var(--color-bg-secondary)" }}>
+      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+        No data baked yet
+      </p>
     </div>
   );
 }
@@ -85,10 +68,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     api.analytics.overview().then((r) => setStats(r.data)).catch(() => null);
-    api.analytics
-      .charts()
-      .then((r) => setCharts(r.data as ChartData))
-      .catch(() => null);
+    api.analytics.charts().then((r) => setCharts(r.data as ChartData)).catch(() => null);
   }, []);
 
   const topRegions = (charts?.budget_by_region ?? []).slice(0, 12);
@@ -96,94 +76,74 @@ export default function DashboardPage() {
   const checked = stats?.satellite?.total_verified ?? 0;
 
   return (
-    <div
-      className="min-h-screen pt-14"
-      style={{ backgroundColor: "var(--color-bg)" }}
-    >
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>
-            Every DPWH bridge in the public record. Satellite change-detection has been
-            run on a curated showcase set, shown on the Verify page.
-          </p>
-        </div>
+    <div className="min-h-screen pt-14" style={{ backgroundColor: "var(--color-bg)" }}>
+      <div className="mx-auto max-w-7xl px-5 py-8 md:px-6">
+        <span className="instrument-label">Public record · DPWH bridges</span>
+        <h1 className="mt-2 font-display text-2xl font-bold md:text-3xl" style={{ color: "var(--color-text-primary)" }}>
+          Dashboard
+        </h1>
+        <p className="mt-1.5 max-w-2xl text-sm" style={{ color: "var(--color-text-muted)" }}>
+          Every DPWH bridge in the public record. Satellite change-detection has been run on a
+          curated showcase set, shown on the Verify page.
+        </p>
 
-        {/* Stats cards */}
+        {/* Stat ledger */}
         {stats && (
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            animate="show"
-            className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4"
+          <div
+            className="mt-7 grid grid-cols-2 gap-px overflow-hidden border md:grid-cols-4"
+            style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-border)" }}
           >
-            <StatCard label="DPWH Bridges" value={formatNumber(stats.total_projects ?? 0)} />
-            <StatCard label="Total Contract Value" value={formatCompact(stats.total_value ?? 0)} />
-            <StatCard
+            <Stat label="DPWH Bridges" value={formatNumber(stats.total_projects ?? 0)} />
+            <Stat label="Total Contract Value" value={formatCompact(stats.total_value ?? 0)} accent />
+            <Stat
               label="Reported Completed"
               value={`${formatNumber(stats.completed_projects ?? 0)} · ${formatPercent(stats.completion_rate ?? 0, 0)}`}
-              accent="var(--color-verified)"
             />
-            <StatCard
-              label="Checked From Space"
-              value={formatNumber(checked)}
-              accent="var(--color-accent)"
-            />
-          </motion.div>
+            <Stat label="Checked From Space" value={formatNumber(checked)} accent />
+          </div>
         )}
 
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate="show"
-          className="space-y-8"
-        >
-          {/* Row 1: Status distribution + Budget by region */}
-          <motion.div variants={fadeUp} className="grid gap-6 lg:grid-cols-3">
-            {/* Status pie */}
-            <div className="card-elevated" style={{ padding: "1.25rem" }}>
-              <SectionLabel title="Bridge Status" subtitle="Reported status across all DPWH bridges" />
+        <div className="mt-8 space-y-6">
+          {/* Row 1 */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Panel title="Bridge Status" subtitle="Reported status across all DPWH bridges">
               {!charts?.status_dist?.length ? (
                 <EmptyState />
               ) : (
                 <>
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="100%" height={210}>
                     <PieChart>
                       <Pie
                         data={charts.status_dist}
                         cx="50%"
                         cy="50%"
-                        innerRadius={55}
-                        outerRadius={85}
+                        innerRadius={54}
+                        outerRadius={82}
                         paddingAngle={2}
                         dataKey="value"
+                        stroke="var(--color-bg)"
+                        strokeWidth={2}
                       >
-                        {charts.status_dist.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
+                        {charts.status_dist.map((e, i) => (
+                          <Cell key={i} fill={e.color} />
                         ))}
                       </Pie>
                       <Tooltip
-                        content={({ payload }) => {
-                          if (!payload?.[0]) return null;
-                          const d = payload[0].payload;
-                          return (
-                            <DarkTooltip
-                              payload={[{ name: d.name, value: d.value, color: d.color }]}
-                            />
-                          );
-                        }}
+                        content={({ payload }) =>
+                          payload?.[0] ? (
+                            <Tip rows={[{ name: payload[0].payload.name, value: formatNumber(payload[0].payload.value), color: payload[0].payload.color }]} />
+                          ) : null
+                        }
                       />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="mt-2 space-y-1.5">
+                  <div className="mt-3 space-y-1.5">
                     {charts.status_dist.map((v) => (
                       <div key={v.status} className="flex items-center justify-between text-[11px]">
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: v.color }} />
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: v.color }} />
                           <span style={{ color: "var(--color-text-secondary)" }}>{v.name}</span>
-                        </div>
+                        </span>
                         <span className="stat-value text-[11px]" style={{ color: "var(--color-text-primary)" }}>
                           {formatNumber(v.value)}
                         </span>
@@ -192,165 +152,101 @@ export default function DashboardPage() {
                   </div>
                 </>
               )}
-            </div>
+            </Panel>
 
-            {/* Budget by region */}
-            <div className="card-elevated lg:col-span-2" style={{ padding: "1.25rem" }}>
-              <SectionLabel title="Bridge Budget by Region" subtitle="Total contract value, top regions" />
+            <Panel className="lg:col-span-2" title="Bridge Budget by Region" subtitle="Total contract value, top regions">
               {!topRegions.length ? (
                 <EmptyState />
               ) : (
                 <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={topRegions} layout="vertical">
-                    <XAxis
-                      type="number"
-                      tickFormatter={(v) => formatCompact(v)}
-                      tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="region"
-                      width={110}
-                      tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }}
-                    />
+                  <BarChart data={topRegions} layout="vertical" margin={{ left: 8, right: 16 }}>
+                    <XAxis type="number" tickFormatter={(v) => formatCompact(v)} tick={AXIS} stroke={GRID} />
+                    <YAxis type="category" dataKey="region" width={104} tick={AXIS} stroke={GRID} />
                     <Tooltip
-                      content={({ payload }) => {
-                        if (!payload?.[0]) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <DarkTooltip
-                            label={d.region}
-                            payload={[
-                              { name: "Value", value: d.value, color: "var(--color-accent)" },
-                              { name: "Bridges", value: d.count },
+                      cursor={{ fill: "rgba(45,212,191,0.06)" }}
+                      content={({ payload }) =>
+                        payload?.[0] ? (
+                          <Tip
+                            label={payload[0].payload.region}
+                            rows={[
+                              { name: "Value", value: formatCompact(payload[0].payload.value), color: "var(--color-accent)" },
+                              { name: "Bridges", value: formatNumber(payload[0].payload.count) },
                             ]}
                           />
-                        );
-                      }}
+                        ) : null
+                      }
                     />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="var(--color-accent)" fillOpacity={0.85} />
+                    <Bar dataKey="value" radius={[0, 3, 3, 0]} fill="var(--color-accent)" fillOpacity={0.9} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
-            </div>
-          </motion.div>
+            </Panel>
+          </div>
 
-          {/* Row 2: Completion rate by region */}
-          <motion.div variants={fadeUp}>
-            <div className="card-elevated" style={{ padding: "1.25rem" }}>
-              <SectionLabel
-                title="Completion Rate by Region"
-                subtitle="Share of bridges reported completed, by region"
-              />
-              {!completionRegions.length ? (
-                <EmptyState />
-              ) : (
-                <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={completionRegions}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                    <XAxis
-                      dataKey="region"
-                      tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
-                      angle={-40}
-                      textAnchor="end"
-                      height={70}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
-                      tickFormatter={(v) => `${v}%`}
-                      domain={[0, 100]}
-                    />
-                    <Tooltip
-                      content={({ payload, label }) => {
-                        if (!payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <DarkTooltip
-                            label={label}
-                            payload={[
-                              { name: "Completion", value: d.completion, color: "#22c55e" },
-                              { name: "Bridges", value: d.projects },
-                            ]}
-                          />
-                        );
-                      }}
-                    />
-                    <Bar
-                      dataKey="completion"
-                      name="Completion %"
-                      fill="#22c55e"
-                      fillOpacity={0.78}
-                      radius={[3, 3, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </motion.div>
+          {/* Row 2 */}
+          <Panel title="Completion Rate by Region" subtitle="Share of bridges reported completed, by region">
+            {!completionRegions.length ? (
+              <EmptyState />
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={completionRegions} margin={{ top: 8 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke={GRID} vertical={false} />
+                  <XAxis dataKey="region" tick={{ ...AXIS, fontSize: 10 }} angle={-40} textAnchor="end" height={70} stroke={GRID} />
+                  <YAxis tick={AXIS} tickFormatter={(v) => `${v}%`} domain={[0, 100]} stroke={GRID} />
+                  <Tooltip
+                    cursor={{ fill: "rgba(45,212,191,0.06)" }}
+                    content={({ payload, label }) =>
+                      payload?.[0] ? (
+                        <Tip
+                          label={String(label)}
+                          rows={[
+                            { name: "Completion", value: `${payload[0].payload.completion}%`, color: "var(--color-accent)" },
+                            { name: "Bridges", value: formatNumber(payload[0].payload.projects) },
+                          ]}
+                        />
+                      ) : null
+                    }
+                  />
+                  <Bar dataKey="completion" fill="var(--color-accent)" fillOpacity={0.82} radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </Panel>
 
-          {/* Row 3: Funding over time */}
-          <motion.div variants={fadeUp}>
-            <div className="card-elevated" style={{ padding: "1.25rem" }}>
-              <SectionLabel
-                title="Bridge Funding by Year"
-                subtitle="Contract value funded vs value reaching completed status"
-              />
-              {!charts?.yearly?.length ? (
-                <EmptyState />
-              ) : (
-                <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={charts.yearly}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                    <XAxis dataKey="year" tick={{ fontSize: 11, fill: "var(--color-text-muted)" }} />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
-                      tickFormatter={(v) => formatCompact(v * 1_000_000_000)}
-                    />
-                    <Tooltip
-                      content={({ payload, label }) => {
-                        if (!payload?.length) return null;
-                        return (
-                          <DarkTooltip
-                            label={label}
-                            payload={payload.map((p) => ({
-                              name: String(p.name),
-                              value: typeof p.value === "number" ? p.value : 0,
-                              color: String(p.color ?? ""),
-                            }))}
-                          />
-                        );
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      name="Funded (B)"
-                      stroke="var(--color-accent)"
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: "var(--color-accent)" }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="completed"
-                      name="Completed (B)"
-                      stroke="var(--color-verified)"
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: "var(--color-verified)" }}
-                      strokeDasharray="5 5"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </motion.div>
-        </motion.div>
+          {/* Row 3 */}
+          <Panel title="Bridge Funding by Year" subtitle="Contract value funded vs value reaching completed status">
+            {!charts?.yearly?.length ? (
+              <EmptyState />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={charts.yearly} margin={{ top: 8, right: 12 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke={GRID} vertical={false} />
+                  <XAxis dataKey="year" tick={AXIS} stroke={GRID} />
+                  <YAxis tick={AXIS} tickFormatter={(v) => `₱${v}B`} stroke={GRID} />
+                  <Tooltip
+                    content={({ payload, label }) =>
+                      payload?.length ? (
+                        <Tip
+                          label={String(label)}
+                          rows={payload.map((p) => ({
+                            name: String(p.name),
+                            value: `₱${(typeof p.value === "number" ? p.value : 0).toFixed(1)}B`,
+                            color: String(p.color ?? ""),
+                          }))}
+                        />
+                      ) : null
+                    }
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, fontFamily: "var(--font-mono-stack)" }} />
+                  <Line type="monotone" dataKey="value" name="Funded" stroke="var(--color-accent)" strokeWidth={2} dot={{ r: 2.5, fill: "var(--color-accent)" }} />
+                  <Line type="monotone" dataKey="completed" name="Completed" stroke="var(--color-verified)" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 2.5, fill: "var(--color-verified)" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </Panel>
+        </div>
 
-        {/* Disclaimer */}
-        <p
-          className="mt-8 text-[11px] leading-relaxed"
-          style={{ color: "var(--color-text-muted)" }}
-        >
+        <p className="mt-8 text-[11px] leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
           {DISCLAIMER}
         </p>
       </div>
@@ -358,39 +254,39 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: string;
-}) {
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <motion.div variants={fadeUp} className="card-elevated" style={{ padding: "1.25rem" }}>
-      <div
-        className="stat-value text-2xl"
-        style={{ color: accent ?? "var(--color-text-primary)" }}
-      >
+    <div style={{ backgroundColor: "var(--color-bg)" }} className="px-4 py-5">
+      <div className="stat-value text-xl md:text-2xl" style={{ color: accent ? "var(--color-accent)" : "var(--color-text-primary)" }}>
         {value}
       </div>
-      <p className="mt-1 text-xs" style={{ color: "var(--color-text-muted)" }}>
-        {label}
-      </p>
-    </motion.div>
+      <p className="instrument-label mt-2">{label}</p>
+    </div>
   );
 }
 
-function SectionLabel({ title, subtitle }: { title: string; subtitle: string }) {
+function Panel({
+  title,
+  subtitle,
+  children,
+  className = "",
+}: {
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="mb-4">
-      <h3 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-        {title}
-      </h3>
-      <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-        {subtitle}
-      </p>
+    <div className={`panel ${className}`} style={{ padding: "1.25rem" }}>
+      <div className="mb-4">
+        <h3 className="font-display text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
+          {title}
+        </h3>
+        <p className="mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
+          {subtitle}
+        </p>
+      </div>
+      {children}
     </div>
   );
 }

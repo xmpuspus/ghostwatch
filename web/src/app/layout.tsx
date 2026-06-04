@@ -1,11 +1,22 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Archivo, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const jetbrainsMono = JetBrains_Mono({
+// Sentinel Instrument type system — a sharp grotesk display, a humanist grotesk
+// body, and a precise mono reserved for measured data (coords, %, ₱, dates).
+const display = Archivo({
   subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["500", "600", "700", "800", "900"],
+});
+const body = Hanken_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+const mono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
   variable: "--font-mono",
 });
 
@@ -30,7 +41,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
+    >
       <head>
         <link
           rel="stylesheet"
@@ -39,7 +53,7 @@ export default function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body className="bg-gw-bg text-gw-text min-h-screen">
+      <body>
         <Header />
         <main>{children}</main>
       </body>

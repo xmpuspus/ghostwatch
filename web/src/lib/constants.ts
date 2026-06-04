@@ -1,10 +1,10 @@
 export const VERIFICATION_COLORS: Record<string, string> = {
-  VERIFIED: "#22c55e",
-  PARTIAL: "#f59e0b",
-  INCONCLUSIVE: "#64748b",
-  GHOST_PROJECT: "#ef4444",
-  UNVERIFIED: "#6b7280",
-  PENDING: "#94a3b8",
+  VERIFIED: "#3fb950",
+  PARTIAL: "#e3b341",
+  INCONCLUSIVE: "#768d87",
+  GHOST_PROJECT: "#f0533f",
+  UNVERIFIED: "#5a6663",
+  PENDING: "#768d87",
 };
 
 export const VERIFICATION_LABELS: Record<string, string> = {
@@ -17,23 +17,24 @@ export const VERIFICATION_LABELS: Record<string, string> = {
 };
 
 export const STATUS_COLORS: Record<string, string> = {
-  COMPLETED: "#22c55e",
-  ONGOING: "#3b82f6",
-  NOT_YET_STARTED: "#6b7280",
-  SUSPENDED: "#f59e0b",
-  TERMINATED: "#ef4444",
+  COMPLETED: "#3fb950",
+  ONGOING: "#2dd4bf",
+  FOR_PROCUREMENT: "#8b94f0",
+  NOT_YET_STARTED: "#768d87",
+  SUSPENDED: "#e3b341",
+  TERMINATED: "#f0533f",
 };
 
 export const PROJECT_TYPE_COLORS: Record<string, string> = {
-  ROAD: "#3b82f6",
-  BRIDGE: "#7c3aed",
-  BUILDING: "#0d9488",
-  FLOOD_CONTROL: "#2563eb",
-  WATER_SUPPLY: "#0891b2",
-  SEAPORT: "#1e40af",
-  AIRPORT: "#6d28d9",
-  MULTI_PURPOSE: "#059669",
-  OTHER: "#6b7280",
+  ROAD: "#2dd4bf",
+  BRIDGE: "#2dd4bf",
+  BUILDING: "#3fb950",
+  FLOOD_CONTROL: "#5eead4",
+  WATER_SUPPLY: "#34d399",
+  SEAPORT: "#2dd4bf",
+  AIRPORT: "#8b94f0",
+  MULTI_PURPOSE: "#3fb950",
+  OTHER: "#768d87",
 };
 
 export function formatPeso(amount: number): string {

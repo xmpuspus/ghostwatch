@@ -8,40 +8,42 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-body)", "Hanken Grotesk", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Archivo", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "IBM Plex Mono", "ui-monospace", "monospace"],
+      },
       colors: {
         gw: {
-          bg: "#0a0f1a",
-          surface: "#141c2e",
-          "surface-elevated": "#1a2440",
-          border: "#243049",
-          text: "#e2e8f0",
-          "text-muted": "#94a3b8",
-          accent: "#3b82f6",
-          "accent-glow": "#60a5fa",
-          ghost: "#ef4444",
-          verified: "#22c55e",
-          partial: "#f59e0b",
-          pending: "#6b7280",
+          bg: "#0b0e0f",
+          surface: "#14191b",
+          "surface-elevated": "#1b2225",
+          border: "#232b2d",
+          text: "#e6edea",
+          "text-muted": "#a8b3b0",
+          accent: "#2dd4bf",
+          "accent-glow": "#5eead4",
+          ghost: "#f0533f",
+          verified: "#3fb950",
+          partial: "#e3b341",
+          pending: "#768d87",
         },
       },
       keyframes: {
-        fadeIn: {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
+        scanSweep: {
+          "0%": { transform: "translateY(-30%)", opacity: "0" },
+          "10%": { opacity: "0.9" },
+          "90%": { opacity: "0.9" },
+          "100%": { transform: "translateY(130%)", opacity: "0" },
         },
-        slideUp: {
-          from: { opacity: "0", transform: "translateY(12px)" },
+        riseIn: {
+          from: { opacity: "0", transform: "translateY(10px)" },
           to: { opacity: "1", transform: "translateY(0)" },
-        },
-        countUp: {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
         },
       },
       animation: {
-        "fade-in": "fadeIn 0.5s ease-out",
-        "slide-up": "slideUp 0.5s ease-out",
-        "count-up": "countUp 1.5s ease-out",
+        "rise-in": "riseIn 0.5s ease-out both",
+        "scan-sweep": "scanSweep 1.1s ease-in-out 0.2s both",
       },
     },
   },

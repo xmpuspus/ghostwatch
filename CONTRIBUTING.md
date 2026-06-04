@@ -31,7 +31,6 @@ cd web && npm run build        # static export must succeed
 - Add a test for any behavior change in the classifier, indices, or adapters.
 - If you change the live data shape, re-run `scripts/bake_bridges.py` and verify
   the frontend still renders.
-- Update `CHANGELOG.md`.
 
 ## Reporting issues
 

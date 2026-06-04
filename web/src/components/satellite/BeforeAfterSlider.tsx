@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Layers } from "lucide-react";
+import { Layers, MoveHorizontal } from "lucide-react";
+import { VERIFICATION_COLORS, VERIFICATION_LABELS } from "@/lib/constants";
 
 interface BeforeAfterSliderProps {
   beforeUrl: string | null;
@@ -11,24 +12,6 @@ interface BeforeAfterSliderProps {
   height?: number;
   classification?: string;
 }
-
-const CLASSIFICATION_COLORS: Record<string, string> = {
-  VERIFIED: "#22c55e",
-  PARTIAL: "#f59e0b",
-  INCONCLUSIVE: "#64748b",
-  GHOST_PROJECT: "#ef4444",
-  UNVERIFIED: "#6b7280",
-  PENDING: "#94a3b8",
-};
-
-const CLASSIFICATION_LABELS: Record<string, string> = {
-  VERIFIED: "Construction detected",
-  PARTIAL: "Partial change",
-  INCONCLUSIVE: "No clear change",
-  GHOST_PROJECT: "Flagged for Review",
-  UNVERIFIED: "Not yet checked",
-  PENDING: "Pending",
-};
 
 export default function BeforeAfterSlider({
   beforeUrl,
@@ -40,10 +23,23 @@ export default function BeforeAfterSlider({
 }: BeforeAfterSliderProps) {
   const [position, setPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [intro, setIntro] = useState(true);
+  const [touched, setTouched] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const clamp = (min: number, max: number, v: number) =>
-    Math.max(min, Math.min(max, v));
+  const clamp = (min: number, max: number, v: number) => Math.max(min, Math.min(max, v));
+
+  // Auto-wipe once when a case opens, so the comparison mechanic is obvious.
+  useEffect(() => {
+    setTouched(false);
+    setIntro(true);
+    setPosition(50);
+    const t1 = setTimeout(() => setPosition(82), 250);
+    const t2 = setTimeout(() => setPosition(20), 850);
+    const t3 = setTimeout(() => setPosition(50), 1500);
+    const t4 = setTimeout(() => setIntro(false), 1950);
+    return () => [t1, t2, t3, t4].forEach(clearTimeout);
+  }, [beforeUrl, afterUrl]);
 
   const handleMove = useCallback(
     (clientX: number) => {
@@ -55,12 +51,10 @@ export default function BeforeAfterSlider({
     [isDragging],
   );
 
-  // Global mouse/touch listeners so dragging outside the container still works
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
     const onTouchMove = (e: TouchEvent) => handleMove(e.touches[0].clientX);
     const onUp = () => setIsDragging(false);
-
     if (isDragging) {
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onUp);
@@ -75,55 +69,55 @@ export default function BeforeAfterSlider({
     };
   }, [isDragging, handleMove]);
 
+  const startDrag = () => {
+    setIntro(false);
+    setTouched(true);
+    setIsDragging(true);
+  };
+
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowLeft") setPosition((p) => clamp(0, 100, p - 2));
-    if (e.key === "ArrowRight") setPosition((p) => clamp(0, 100, p + 2));
+    setIntro(false);
+    setTouched(true);
+    if (e.key === "ArrowLeft") setPosition((p) => clamp(0, 100, p - 3));
+    if (e.key === "ArrowRight") setPosition((p) => clamp(0, 100, p + 3));
   };
 
   const hasImages = beforeUrl || afterUrl;
+  const animated = intro && !isDragging;
 
   if (!hasImages) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl"
-        style={{
-          height,
-          backgroundColor: "var(--color-bg-secondary)",
-        }}
+        className="flex items-center justify-center"
+        style={{ height, backgroundColor: "var(--color-surface)", borderRadius: "var(--radius)" }}
       >
         <div className="text-center">
-          <Layers
-            size={48}
-            className="mx-auto mb-3 opacity-25"
-            style={{ color: "var(--color-text-muted)" }}
-          />
-          <p className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
+          <Layers size={40} className="mx-auto mb-3 opacity-25" style={{ color: "var(--color-text-muted)" }} />
+          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
             No satellite imagery available
-          </p>
-          <p className="mt-1 text-xs" style={{ color: "var(--color-text-muted)" }}>
-            Run the satellite pipeline to generate before/after tiles
           </p>
         </div>
       </div>
     );
   }
 
+  const color = classification ? VERIFICATION_COLORS[classification] ?? "#768d87" : "var(--color-accent)";
+
   return (
     <div
       ref={containerRef}
-      className="satellite-comparison relative select-none overflow-hidden rounded-xl"
-      style={{ height, backgroundColor: "#000" }}
-      onMouseDown={() => setIsDragging(true)}
-      onTouchStart={() => setIsDragging(true)}
+      className="satellite-comparison relative"
+      style={{ height, backgroundColor: "#000", border: "1px solid var(--color-border)" }}
+      onMouseDown={startDrag}
+      onTouchStart={startDrag}
       onKeyDown={onKeyDown}
       tabIndex={0}
       role="slider"
       aria-valuenow={Math.round(position)}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-label="Before/after satellite comparison"
+      aria-label="Drag to compare before and after satellite imagery"
     >
-      {/* Before image (full width, beneath) */}
       {beforeUrl && (
         <img
           src={beforeUrl}
@@ -132,57 +126,73 @@ export default function BeforeAfterSlider({
           draggable={false}
         />
       )}
-
-      {/* After image (clipped from left edge to slider position) */}
       {afterUrl && (
         <img
           src={afterUrl}
           alt="After satellite imagery"
           className="absolute inset-0 h-full w-full object-cover"
-          style={{ clipPath: `inset(0 0 0 ${position}%)` }}
+          style={{
+            clipPath: `inset(0 0 0 ${position}%)`,
+            transition: animated ? "clip-path 0.6s cubic-bezier(0.22,1,0.36,1)" : "none",
+          }}
           draggable={false}
         />
       )}
 
-      {/* Divider line */}
+      {/* Divider — instrument hairline + registration-cross handle */}
       <div
-        className="absolute bottom-0 top-0 z-10 w-[3px] bg-white"
+        className="absolute bottom-0 top-0 z-10 w-px"
         style={{
           left: `${position}%`,
           transform: "translateX(-50%)",
-          boxShadow: "0 0 12px rgba(0,0,0,0.7), 0 0 4px rgba(255,255,255,0.3)",
+          backgroundColor: "var(--color-accent)",
+          boxShadow: "0 0 10px var(--accent-line)",
+          transition: animated ? "left 0.6s cubic-bezier(0.22,1,0.36,1)" : "none",
         }}
       >
-        {/* Handle */}
         <div
-          className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 rounded-full border-2 border-white bg-black/60 px-1.5 py-1.5 backdrop-blur-sm"
-          style={{ cursor: "ew-resize" }}
+          className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full"
+          style={{
+            backgroundColor: "rgba(11,14,15,0.85)",
+            border: "1.5px solid var(--color-accent)",
+            cursor: "ew-resize",
+          }}
         >
-          <ChevronLeft size={10} className="text-white" />
-          <ChevronRight size={10} className="text-white" />
+          <MoveHorizontal size={14} style={{ color: "var(--color-accent)" }} />
         </div>
       </div>
 
-      {/* Date labels */}
-      <div className="absolute left-3 top-3 z-20 rounded-md bg-black/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-        Before{beforeDate ? ` — ${beforeDate}` : ""}
+      {/* Date readouts */}
+      <div
+        className="coord absolute left-3 top-3 z-20 rounded px-2 py-1 text-[10px] uppercase tracking-wider"
+        style={{ backgroundColor: "rgba(11,14,15,0.78)", color: "var(--color-text-secondary)" }}
+      >
+        Before · {beforeDate}
       </div>
-      <div className="absolute right-3 top-3 z-20 rounded-md bg-black/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-        After{afterDate ? ` — ${afterDate}` : ""}
+      <div
+        className="coord absolute right-3 top-3 z-20 rounded px-2 py-1 text-[10px] uppercase tracking-wider"
+        style={{ backgroundColor: "rgba(11,14,15,0.78)", color: "var(--color-text-secondary)" }}
+      >
+        After · {afterDate}
       </div>
 
-      {/* Classification badge */}
-      {classification && CLASSIFICATION_LABELS[classification] && (
+      {/* Drag hint until first interaction */}
+      {!touched && (
         <div
-          className="absolute bottom-3 left-3 z-20 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm"
-          style={{
-            backgroundColor:
-              (CLASSIFICATION_COLORS[classification] || "#6b7280") + "22",
-            color: CLASSIFICATION_COLORS[classification] || "#6b7280",
-            border: `1px solid ${CLASSIFICATION_COLORS[classification] || "#6b7280"}44`,
-          }}
+          className="instrument-label absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded px-2.5 py-1 !text-[10px]"
+          style={{ backgroundColor: "rgba(11,14,15,0.82)", color: "var(--color-text-secondary)" }}
         >
-          {CLASSIFICATION_LABELS[classification]}
+          <MoveHorizontal size={11} /> Drag to compare
+        </div>
+      )}
+
+      {/* Classification stamp */}
+      {classification && VERIFICATION_LABELS[classification] && (
+        <div
+          className="badge absolute bottom-3 right-3 z-20"
+          style={{ color, backgroundColor: "rgba(11,14,15,0.82)" }}
+        >
+          {VERIFICATION_LABELS[classification]}
         </div>
       )}
     </div>

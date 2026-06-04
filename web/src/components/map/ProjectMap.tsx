@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
-import { MapPin, Building2, Calendar, DollarSign } from "lucide-react";
+import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert } from "lucide-react";
 import {
   MAP_CENTER,
   MAP_ZOOM,
@@ -18,6 +18,20 @@ import type { Project, VerificationStatus } from "@/types/project";
 
 type MapStyle = "streets" | "satellite" | "light";
 
+const FILTERS: { label: string; value: VerificationStatus | "ALL" }[] = [
+  { label: "All", value: "ALL" },
+  { label: "Construction detected", value: "VERIFIED" },
+  { label: "Partial change", value: "PARTIAL" },
+  { label: "No clear change", value: "INCONCLUSIVE" },
+];
+
+const LEGEND: { label: string; value: string }[] = [
+  { label: "Construction detected", value: "VERIFIED" },
+  { label: "Partial change", value: "PARTIAL" },
+  { label: "No clear change", value: "INCONCLUSIVE" },
+  { label: "Not yet checked", value: "UNVERIFIED" },
+];
+
 export default function ProjectMap() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [totalMatching, setTotalMatching] = useState(0);
@@ -32,8 +46,7 @@ export default function ProjectMap() {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((resp) => {
         const features = resp?.data?.features ?? [];
-        const total = resp?.meta?.total_matching ?? resp?.data?.total_matching ?? features.length;
-        setTotalMatching(total);
+        setTotalMatching(resp?.meta?.total_matching ?? features.length);
         setProjects(
           features.map(
             (f: { properties: Project; geometry: { coordinates: [number, number] } }) => ({
@@ -48,6 +61,12 @@ export default function ProjectMap() {
       .finally(() => setLoading(false));
   }, []);
 
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { ALL: projects.length };
+    for (const p of projects) c[p.verification_status] = (c[p.verification_status] ?? 0) + 1;
+    return c;
+  }, [projects]);
+
   const filtered = useMemo(
     () =>
       activeFilter === "ALL"
@@ -57,13 +76,6 @@ export default function ProjectMap() {
   );
 
   const tile = TILE_LAYERS[mapStyle];
-
-  const FILTER_OPTIONS: { label: string; value: VerificationStatus | "ALL" }[] = [
-    { label: "All", value: "ALL" },
-    { label: "Construction detected", value: "VERIFIED" },
-    { label: "Partial change", value: "PARTIAL" },
-    { label: "No clear change", value: "INCONCLUSIVE" },
-  ];
 
   return (
     <div className="relative h-full w-full">
@@ -76,17 +88,16 @@ export default function ProjectMap() {
         preferCanvas={true}
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />
-
         {filtered.map((p) => (
           <CircleMarker
             key={p.id}
             center={[p.lat, p.lng]}
-            radius={markerRadius(p.contract_amount)}
+            radius={markerRadius(p.contract_amount, p.verification_status)}
             pathOptions={{
-              color: "#ffffff",
-              fillColor: VERIFICATION_COLORS[p.verification_status] ?? "#6b7280",
-              fillOpacity: 0.75,
-              weight: 1.5,
+              color: p.verification_status === "UNVERIFIED" ? "transparent" : "#0b0e0f",
+              fillColor: VERIFICATION_COLORS[p.verification_status] ?? "#5a6663",
+              fillOpacity: p.verification_status === "UNVERIFIED" ? 0.55 : 0.95,
+              weight: 1,
             }}
           >
             <Popup>
@@ -96,19 +107,66 @@ export default function ProjectMap() {
         ))}
       </MapContainer>
 
-      {/* Map style toggle */}
+      {/* Map title + count (top-left) */}
       <div
-        className="absolute right-4 top-4 z-[1000] flex rounded-lg p-0.5"
-        style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
+        className="absolute left-4 top-4 z-[1000] rounded p-3"
+        style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
+      >
+        <p className="instrument-label">Bridges of the Philippines</p>
+        <p className="stat-value mt-1 text-lg" style={{ color: "var(--color-text-primary)" }}>
+          {formatNumber(filtered.length)}
+          <span className="ml-1.5 text-[11px] font-normal" style={{ color: "var(--color-text-muted)" }}>
+            / {formatNumber(totalMatching)} mapped
+          </span>
+        </p>
+
+        {/* Filter chips with counts */}
+        <div className="mt-3 flex flex-col gap-1">
+          {FILTERS.map((opt) => {
+            const active = activeFilter === opt.value;
+            const swatch =
+              opt.value === "ALL" ? "var(--color-accent)" : VERIFICATION_COLORS[opt.value] ?? "#768d87";
+            return (
+              <button
+                key={opt.value}
+                onClick={() => setActiveFilter(opt.value)}
+                className="flex items-center justify-between gap-3 rounded px-2 py-1 text-left transition-colors"
+                style={{
+                  backgroundColor: active ? "var(--color-surface-elevated)" : "transparent",
+                  border: active ? "1px solid var(--color-border-strong)" : "1px solid transparent",
+                }}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: swatch }} />
+                  <span
+                    className="text-[11px]"
+                    style={{ color: active ? "var(--color-text-primary)" : "var(--color-text-muted)" }}
+                  >
+                    {opt.label}
+                  </span>
+                </span>
+                <span className="stat-value text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+                  {formatNumber(counts[opt.value] ?? 0)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Basemap toggle (top-right) */}
+      <div
+        className="absolute right-4 top-4 z-[1000] flex rounded p-0.5"
+        style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
       >
         {(["satellite", "streets", "light"] as MapStyle[]).map((s) => (
           <button
             key={s}
             onClick={() => setMapStyle(s)}
-            className="rounded-md px-2.5 py-1 text-[11px] font-medium capitalize transition-all"
+            className="rounded px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors"
             style={{
               backgroundColor: mapStyle === s ? "var(--color-accent)" : "transparent",
-              color: mapStyle === s ? "white" : "var(--color-text-muted)",
+              color: mapStyle === s ? "var(--color-text-inverted)" : "var(--color-text-muted)",
             }}
           >
             {s}
@@ -116,76 +174,53 @@ export default function ProjectMap() {
         ))}
       </div>
 
-      {/* Verification filter */}
+      {/* Legend (bottom-left) */}
       <div
-        className="absolute left-4 top-4 z-[1000] flex flex-wrap gap-1 rounded-xl p-2"
-        style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
+        className="absolute bottom-5 left-4 z-[1000] hidden rounded p-3 sm:block"
+        style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
       >
-        {FILTER_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setActiveFilter(opt.value)}
-            className="rounded-md px-2.5 py-1 text-[11px] font-medium transition-all"
-            style={{
-              backgroundColor:
-                activeFilter === opt.value
-                  ? opt.value === "ALL"
-                    ? "var(--color-accent)"
-                    : (VERIFICATION_COLORS[opt.value] || "var(--color-accent)") + "33"
-                  : "transparent",
-              color:
-                activeFilter === opt.value
-                  ? opt.value === "ALL"
-                    ? "white"
-                    : VERIFICATION_COLORS[opt.value] || "white"
-                  : "var(--color-text-muted)",
-              border:
-                activeFilter === opt.value && opt.value !== "ALL"
-                  ? `1px solid ${VERIFICATION_COLORS[opt.value]}66`
-                  : "1px solid transparent",
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
+        <p className="instrument-label mb-2">Satellite check</p>
+        <div className="flex flex-col gap-1.5">
+          {LEGEND.map((l) => (
+            <div key={l.value} className="flex items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: VERIFICATION_COLORS[l.value] ?? "#5a6663" }}
+              />
+              <span className="text-[11px]" style={{ color: "var(--color-text-secondary)" }}>
+                {l.label}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 max-w-[180px] text-[10px] leading-snug" style={{ color: "var(--color-text-muted)" }}>
+          16 bridges checked from space; the rest map the full public record.
+        </p>
       </div>
 
-      {/* Project count */}
-      {!loadError && !loading && projects.length > 0 && (
-        <div
-          className="absolute bottom-6 right-4 z-[1000] rounded-xl p-3"
-          style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
-        >
-          <p className="stat-value text-lg" style={{ color: "var(--color-text-primary)" }}>
-            {formatNumber(filtered.length)}
-          </p>
-          <p className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-            of {formatNumber(totalMatching)} projects
-          </p>
-        </div>
-      )}
-
-      {/* Loading state */}
+      {/* Loading */}
       {loading && (
         <div
-          className="absolute inset-x-0 bottom-20 z-[1000] mx-auto w-fit rounded-xl px-4 py-3"
-          style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
+          className="absolute inset-x-0 bottom-24 z-[1000] mx-auto flex w-fit items-center gap-2 rounded px-4 py-2.5"
+          style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
         >
-          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-            Loading project data...
-          </p>
+          <Loader2 size={14} className="animate-spin" style={{ color: "var(--color-accent)" }} />
+          <span className="instrument-label !text-[11px]" style={{ color: "var(--color-text-secondary)" }}>
+            Loading bridge record…
+          </span>
         </div>
       )}
 
-      {/* Error state */}
+      {/* Error (distinct from loading) */}
       {!loading && loadError && (
         <div
-          className="absolute inset-x-0 bottom-20 z-[1000] mx-auto w-fit rounded-xl px-4 py-3"
-          style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
+          className="absolute inset-x-0 bottom-24 z-[1000] mx-auto flex w-fit items-center gap-2 rounded px-4 py-2.5"
+          style={{ backgroundColor: "rgba(240,83,63,0.12)", border: "1px solid var(--color-ghost)" }}
         >
-          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-            Could not load project data
-          </p>
+          <TriangleAlert size={14} style={{ color: "var(--color-ghost)" }} />
+          <span className="text-[12px]" style={{ color: "var(--color-text-primary)" }}>
+            Could not load bridge data. Reload to retry.
+          </span>
         </div>
       )}
     </div>
@@ -193,72 +228,47 @@ export default function ProjectMap() {
 }
 
 function PopupCard({ project }: { project: Project }) {
+  const vcolor = VERIFICATION_COLORS[project.verification_status] ?? "#768d87";
   return (
-    <div className="min-w-[240px] p-1">
-      <h3
-        className="mb-2 text-sm font-semibold leading-tight"
-        style={{ color: "var(--color-text-primary)" }}
-      >
+    <div className="min-w-[230px] p-1" style={{ fontFamily: "var(--font-body-stack)" }}>
+      <h3 className="mb-2 text-sm font-semibold leading-tight" style={{ color: "var(--color-text-primary)" }}>
         {project.title}
       </h3>
-
       <div className="mb-2 flex flex-wrap gap-1.5">
-        <span
-          className="badge"
-          style={{
-            backgroundColor: (VERIFICATION_COLORS[project.verification_status] ?? "#6b7280") + "22",
-            color: VERIFICATION_COLORS[project.verification_status] ?? "#6b7280",
-          }}
-        >
+        <span className="badge" style={{ color: vcolor }}>
           {VERIFICATION_LABELS[project.verification_status] ?? project.verification_status}
         </span>
-        <span
-          className="badge"
-          style={{
-            backgroundColor: (STATUS_COLORS[project.status] ?? "#6b7280") + "22",
-            color: STATUS_COLORS[project.status] ?? "#6b7280",
-          }}
-        >
+        <span className="badge" style={{ color: STATUS_COLORS[project.status] ?? "#768d87" }}>
           {project.status.replace(/_/g, " ")}
         </span>
       </div>
-
       <div className="space-y-1.5">
-        <PopupRow icon={<DollarSign size={12} />} label="Contract" value={formatPeso(project.contract_amount)} />
-        <PopupRow icon={<Building2 size={12} />} label="Contractor" value={project.contractor} />
-        <PopupRow icon={<MapPin size={12} />} label="Location" value={`${project.district}, ${project.region}`} />
+        <Row icon={<Banknote size={12} />} label="Contract" value={formatPeso(project.contract_amount)} />
+        <Row icon={<Building2 size={12} />} label="Contractor" value={project.contractor} />
+        <Row icon={<MapPin size={12} />} label="Location" value={`${project.district}, ${project.region}`} />
         {project.target_completion && (
-          <PopupRow icon={<Calendar size={12} />} label="Target" value={project.target_completion} />
+          <Row icon={<Calendar size={12} />} label="Completion" value={project.target_completion} />
         )}
       </div>
-
-      <a
-        href={`/verify?id=${project.id}`}
-        className="mt-3 block text-center text-[11px] font-semibold"
-        style={{ color: "var(--color-accent)" }}
-      >
-        View verification
-      </a>
+      {project.verification_status !== "UNVERIFIED" && (
+        <a
+          href={`/verify?id=${project.id}`}
+          className="mt-3 block font-mono text-[11px] font-semibold uppercase tracking-wider"
+          style={{ color: "var(--color-accent)" }}
+        >
+          View satellite check →
+        </a>
+      )}
     </div>
   );
 }
 
-function PopupRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-start gap-2">
       <span style={{ color: "var(--color-text-muted)" }}>{icon}</span>
       <div>
-        <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-          {label}
-        </span>
+        <span className="instrument-label !text-[9px]">{label}</span>
         <p className="text-xs font-medium" style={{ color: "var(--color-text-primary)" }}>
           {value}
         </p>
@@ -267,9 +277,11 @@ function PopupRow({
   );
 }
 
-function markerRadius(amount: number): number {
-  if (amount >= 1_000_000_000) return 10;
-  if (amount >= 100_000_000) return 8;
-  if (amount >= 10_000_000) return 6;
-  return 5;
+function markerRadius(amount: number, status: string): number {
+  // checked bridges get a slightly larger, solid dot so the 16 stand out
+  const base = status === "UNVERIFIED" ? 0 : 2;
+  if (amount >= 1_000_000_000) return 9 + base;
+  if (amount >= 100_000_000) return 6 + base;
+  if (amount >= 10_000_000) return 4.5 + base;
+  return 3.5 + base;
 }

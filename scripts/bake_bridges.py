@@ -53,11 +53,11 @@ _STATUS_MAP = {
 }
 
 _STATUS_COLORS = {
-    "COMPLETED": "#22c55e",
-    "ONGOING": "#3b82f6",
-    "FOR_PROCUREMENT": "#a78bfa",
-    "TERMINATED": "#ef4444",
-    "NOT_YET_STARTED": "#6b7280",
+    "COMPLETED": "#3fb950",
+    "ONGOING": "#2dd4bf",
+    "FOR_PROCUREMENT": "#8b94f0",
+    "TERMINATED": "#f0533f",
+    "NOT_YET_STARTED": "#768d87",
 }
 
 _STATUS_LABELS = {
