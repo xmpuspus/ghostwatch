@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Marker } from "react-leaflet";
+import L from "leaflet";
 import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert, SatelliteDish, X } from "lucide-react";
 import {
   MAP_CENTER,
@@ -25,6 +26,18 @@ const FILTERS: { label: string; value: VerificationStatus | "ALL" }[] = [
   { label: "Partial change", value: "PARTIAL" },
   { label: "No clear change", value: "INCONCLUSIVE" },
 ];
+
+// Satellite-checked bridges render as an "acquired target" reticle in their
+// classification color with a slow radar ping, so the clickable showcase stands
+// out above the faint record dots.
+function makeReticleIcon(color: string) {
+  return L.divIcon({
+    className: "gw-reticle-wrap",
+    html: `<div class="gw-reticle"><span class="gw-pulse" style="--c:${color}"></span><svg width="22" height="22" viewBox="0 0 22 22" style="overflow:visible"><circle cx="11" cy="11" r="7" fill="none" stroke="${color}" stroke-width="1.6"/><circle cx="11" cy="11" r="2.2" fill="${color}"/><line x1="11" y1="0.5" x2="11" y2="4.5" stroke="${color}" stroke-width="1.6"/><line x1="11" y1="17.5" x2="11" y2="21.5" stroke="${color}" stroke-width="1.6"/><line x1="0.5" y1="11" x2="4.5" y2="11" stroke="${color}" stroke-width="1.6"/><line x1="17.5" y1="11" x2="21.5" y2="11" stroke="${color}" stroke-width="1.6"/></svg></div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
+}
 
 export default function ProjectMap() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -63,12 +76,21 @@ export default function ProjectMap() {
       .catch(() => setCases([]));
   }, []);
 
-  // project_id -> its satellite check (tiles + dates), for the popup viewer.
+  // project_id -> its satellite check (tiles + dates), for the modal viewer.
   const caseLookup = useMemo(() => {
     const m = new Map<string, VerificationResult>();
     for (const c of cases) m.set(c.project_id, c);
     return m;
   }, [cases]);
+
+  const reticleIcons = useMemo(
+    () => ({
+      VERIFIED: makeReticleIcon(VERIFICATION_COLORS.VERIFIED),
+      PARTIAL: makeReticleIcon(VERIFICATION_COLORS.PARTIAL),
+      INCONCLUSIVE: makeReticleIcon(VERIFICATION_COLORS.INCONCLUSIVE),
+    }),
+    [],
+  );
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { ALL: projects.length };
@@ -102,20 +124,38 @@ export default function ProjectMap() {
         preferCanvas={true}
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />
-        {filtered.map((p) => (
-          <CircleMarker
-            key={p.id}
-            center={[p.lat, p.lng]}
-            radius={markerRadius(p.contract_amount, p.verification_status)}
-            pathOptions={{
-              color: p.verification_status === "UNVERIFIED" ? "transparent" : "#0b0e0f",
-              fillColor: VERIFICATION_COLORS[p.verification_status] ?? "#5a6663",
-              fillOpacity: p.verification_status === "UNVERIFIED" ? 0.55 : 0.95,
-              weight: 1,
-            }}
-            eventHandlers={{ click: () => setSelected(p) }}
-          />
-        ))}
+        {/* Faint record dots — the full public ledger, kept recessive */}
+        {filtered.map((p) =>
+          p.verification_status === "UNVERIFIED" ? (
+            <CircleMarker
+              key={p.id}
+              center={[p.lat, p.lng]}
+              radius={markerRadius(p.contract_amount, p.verification_status)}
+              pathOptions={{
+                color: "transparent",
+                fillColor: "#5a6663",
+                fillOpacity: 0.42,
+                weight: 0,
+              }}
+              eventHandlers={{ click: () => setSelected(p) }}
+            />
+          ) : null,
+        )}
+        {/* Satellite-checked showcase — reticle targets that pop and invite a click */}
+        {filtered.map((p) =>
+          p.verification_status !== "UNVERIFIED" ? (
+            <Marker
+              key={p.id}
+              position={[p.lat, p.lng]}
+              icon={
+                reticleIcons[p.verification_status as "VERIFIED" | "PARTIAL" | "INCONCLUSIVE"] ??
+                reticleIcons.INCONCLUSIVE
+              }
+              zIndexOffset={1000}
+              eventHandlers={{ click: () => setSelected(p) }}
+            />
+          ) : null,
+        )}
       </MapContainer>
 
       {/* Map title + count (top-left) */}

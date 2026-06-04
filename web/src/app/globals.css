@@ -255,6 +255,47 @@ input:focus-visible {
   border-color: var(--color-border) !important;
 }
 
+/* Map sensor reticles — the satellite-checked bridges read as acquired targets */
+.leaflet-div-icon.gw-reticle-wrap {
+  background: transparent;
+  border: none;
+}
+.gw-reticle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.gw-reticle:hover {
+  transform: scale(1.3);
+}
+.gw-reticle svg {
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+.gw-pulse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c);
+  opacity: 0;
+  animation: gwPing 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes gwPing {
+  0% { transform: scale(0.7); opacity: 0.85; }
+  70% { opacity: 0; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }

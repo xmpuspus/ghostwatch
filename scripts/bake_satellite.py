@@ -75,6 +75,44 @@ CURATED_IDS = [
     "21N00139",  # East-West lateral road bridge (Region XIII)
     "22N00073",  # Libertad-Imelda PSCG bridge (Region XIII)
     "22P00117",  # Baguio-La Trinidad-Itogon bridge (CAR)
+    # Expanded set — completed bridges (infraYear 2021-2023), >P150M, spread across
+    # the archipelago. Larger land footprints (bypasses, flyovers, interchanges)
+    # tend to show clear construction; replacements/widenings over water stay
+    # inconclusive. Every read is classified honestly; none is ever a ghost.
+    "23CI0026",  # Network development program, flyover construction
+    "21D00059",  # FY2021 infrastructure program bridge
+    "23K00197",  # Missing links/new roads, Bukidnon
+    "21L00153",  # Concrete bridge at Sta. Ana section
+    "22B00008",  # Safe and reliable national road system bridge
+    "21A00149",  # By-pass and diversion roads, Bauang
+    "23E00036",  # Replacement of permanent weak bridges, Alag-Malad
+    "22N00024",  # Butuan City West Diversion Road, Pinamanculan Br.
+    "21K00044",  # Bridge linking Tumpagon, Cagayan de Oro
+    "22E00055",  # Replacement of weak bridges, Binayaan Bridge
+    "21B00060",  # National road system bridge (Region II)
+    "23F00061",  # National road system bridge (Region V)
+    "22A00004",  # Major repair of permanent bridges (Region I)
+    "21H00004",  # National road system bridge (Region VII)
+    "22E00006",  # Lumintao Bridge widening (Region IV-B)
+    "22K00270",  # Access roads leading to airport (Region X)
+    "23F00167",  # National road system bridge (Region V)
+    "23E00090",  # Babuyan Bridge widening (Region IV-B)
+    "22G00134",  # Retrofitting of Dalanas Br. (Region VI)
+    "23A00145",  # Badoc parallel bridge widening (Region I)
+    "21I00042",  # Replacement of temporary to permanent bridges
+    "21C00065",  # Missing links construction (Region III)
+    "21D00058",  # National road system, network development
+    "23L00041",  # Tuganay Br. replacement/completion (Region XI)
+    "21L00141",  # Flyover partial substructure (Region XI)
+    "21CN0117",  # Kadayakan Bridge, Maria Aurora (Region III)
+    "21A00147",  # By-pass and diversion roads, Ilocos
+    "22D00011",  # Flyovers/interchanges/underpasses (Region IV-A)
+    "22N00033",  # Banza to Magallanes road (Region XIII)
+    "21C00058",  # By-pass and diversion roads (Region III)
+    "20D00048",  # FY2020 infrastructure program bridge
+    "21K00084",  # Pulangi Bridge, Don Carlos-Kibawe (Region X)
+    "22M00055",  # Lun Masla Br. widening (Region XII)
+    "23CC0417",  # Network development, flyover construction
 ]
 
 
