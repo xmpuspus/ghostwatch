@@ -325,8 +325,8 @@ function SatelliteModal({
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded"
-          style={{ backgroundColor: "rgba(11,14,15,0.7)", color: "var(--color-text-secondary)" }}
+          className="absolute right-2.5 top-2.5 z-30 flex h-8 w-8 items-center justify-center rounded"
+          style={{ backgroundColor: "rgba(11,14,15,0.82)", color: "var(--color-text-primary)" }}
         >
           <X size={16} />
         </button>
