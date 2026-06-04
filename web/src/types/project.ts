@@ -7,8 +7,9 @@ export type ProjectStatus =
 
 export type VerificationStatus =
   | "VERIFIED"
-  | "GHOST_PROJECT"
   | "PARTIAL"
+  | "INCONCLUSIVE"
+  | "GHOST_PROJECT"
   | "UNVERIFIED"
   | "PENDING";
 
@@ -80,6 +81,16 @@ export interface RedFlag {
   contractor?: string;
 }
 
+export interface SatelliteOverview {
+  total_verified: number;
+  verified_real: number;
+  flagged_for_review: number;
+  partial: number;
+  pending: number;
+  avg_confidence: number;
+  data_available: boolean;
+}
+
 export interface OverviewStats {
   total_projects: number;
   total_value: number;
@@ -91,7 +102,9 @@ export interface OverviewStats {
   total_contractors: number;
   avg_contract_value: number;
   regions_covered: number;
+  with_coordinates?: number;
   data_available: boolean;
+  satellite?: SatelliteOverview;
 }
 
 export interface BudgetData {

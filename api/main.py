@@ -67,12 +67,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Public read-only API: explicit origins, no credentials/cookies, GET only.
 _cors_origins = [o.strip() for o in (settings.cors_origins or "http://localhost:3000").split(",")]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "OPTIONS"],
     allow_headers=["*"],
 )
 

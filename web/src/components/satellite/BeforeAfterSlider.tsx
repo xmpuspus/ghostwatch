@@ -13,18 +13,20 @@ interface BeforeAfterSliderProps {
 }
 
 const CLASSIFICATION_COLORS: Record<string, string> = {
-  GHOST_PROJECT: "#ef4444",
   VERIFIED: "#22c55e",
   PARTIAL: "#f59e0b",
+  INCONCLUSIVE: "#64748b",
+  GHOST_PROJECT: "#ef4444",
   UNVERIFIED: "#6b7280",
   PENDING: "#94a3b8",
 };
 
 const CLASSIFICATION_LABELS: Record<string, string> = {
+  VERIFIED: "Construction detected",
+  PARTIAL: "Partial change",
+  INCONCLUSIVE: "No clear change",
   GHOST_PROJECT: "Flagged for Review",
-  VERIFIED: "Verified",
-  PARTIAL: "Partial Build",
-  UNVERIFIED: "Unverified",
+  UNVERIFIED: "Not yet checked",
   PENDING: "Pending",
 };
 

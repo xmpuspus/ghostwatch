@@ -37,8 +37,5 @@ class Settings(BaseSettings):
     rate_limit_satellite: int = 30
     rate_limit_general: int = 60
 
-    # admin API key for privileged operations
-    admin_api_key: str = ""
-
 
 settings = Settings()

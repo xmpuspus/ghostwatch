@@ -1,19 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
-      },
-    ];
-  },
+  // Fully static export — no Node server, no backend at request time.
+  // The Python pipeline bakes real data into public/data/*; Vercel serves out/.
+  output: "export",
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'earthengine.googleapis.com' },
-    ],
+    unoptimized: true,
   },
+  trailingSlash: true,
 };
 
 export default nextConfig;

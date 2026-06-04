@@ -28,7 +28,7 @@ export default function ProjectMap() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/v1/projects/map?limit=5000")
+    fetch("/data/bridges.json")
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((resp) => {
         const features = resp?.data?.features ?? [];
@@ -60,10 +60,9 @@ export default function ProjectMap() {
 
   const FILTER_OPTIONS: { label: string; value: VerificationStatus | "ALL" }[] = [
     { label: "All", value: "ALL" },
-    { label: "Flagged", value: "GHOST_PROJECT" },
-    { label: "Verified", value: "VERIFIED" },
-    { label: "Partial", value: "PARTIAL" },
-    { label: "Pending", value: "PENDING" },
+    { label: "Construction detected", value: "VERIFIED" },
+    { label: "Partial change", value: "PARTIAL" },
+    { label: "No clear change", value: "INCONCLUSIVE" },
   ];
 
   return (
@@ -74,6 +73,7 @@ export default function ProjectMap() {
         maxZoom={MAP_MAX_ZOOM}
         className="h-full w-full"
         zoomControl={false}
+        preferCanvas={true}
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />
 

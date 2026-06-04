@@ -1,16 +1,18 @@
 export const VERIFICATION_COLORS: Record<string, string> = {
   VERIFIED: "#22c55e",
-  GHOST_PROJECT: "#ef4444",
   PARTIAL: "#f59e0b",
+  INCONCLUSIVE: "#64748b",
+  GHOST_PROJECT: "#ef4444",
   UNVERIFIED: "#6b7280",
   PENDING: "#94a3b8",
 };
 
 export const VERIFICATION_LABELS: Record<string, string> = {
-  VERIFIED: "Verified",
+  VERIFIED: "Construction detected",
+  PARTIAL: "Partial change",
+  INCONCLUSIVE: "No clear change",
   GHOST_PROJECT: "Flagged for Review",
-  PARTIAL: "Partial Build",
-  UNVERIFIED: "Unverified",
+  UNVERIFIED: "Not yet checked",
   PENDING: "Pending",
 };
 
@@ -89,6 +91,4 @@ export const TILE_LAYERS = {
 };
 
 export const DISCLAIMER =
-  "Verification results are based on automated satellite analysis (Sentinel-2 spectral indices) and may contain errors. Projects flagged for review require manual ground-truth investigation before any conclusions can be drawn. Flags are statistical indicators — not proof of fraud.";
-
-export const API_BASE = "/api/v1";
+  "Satellite reads are automated change-detection on free 10m Sentinel-2 imagery and can be wrong — bridges over water, narrow spans, and structures completed outside the imagery window are common reasons a real bridge shows little visible change. A result is a prompt for review, never proof of wrongdoing. Every case needs ground-truth investigation before any conclusion is drawn. All figures are from the public DPWH record.";

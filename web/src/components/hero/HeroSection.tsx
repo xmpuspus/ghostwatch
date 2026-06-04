@@ -63,7 +63,7 @@ export default function HeroSection() {
           }}
         >
           <Satellite size={12} />
-          Open-source satellite verification
+          Open-source · DPWH bridges · Sentinel-2
         </motion.div>
 
         {/* Headline */}
@@ -81,7 +81,7 @@ export default function HeroSection() {
               backgroundClip: "text",
             }}
           >
-            See it
+            Bridges,
           </span>{" "}
           <span
             style={{
@@ -103,9 +103,10 @@ export default function HeroSection() {
           className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Satellite change detection on government infrastructure projects. Upload a
-          CSV of project coordinates — GhostWatch tells you whether each project was
-          actually built.
+          Every bridge in the Philippine DPWH record, mapped from public data and
+          checked against free Sentinel-2 imagery — to see whether what was reported
+          as built is visible from orbit. Open-source: clone it, point it at any
+          country.
         </motion.p>
 
         {/* Stats row */}
@@ -116,7 +117,7 @@ export default function HeroSection() {
           className="mb-10 grid grid-cols-2 gap-4 md:grid-cols-4"
         >
           <StatCard
-            label="Infrastructure Projects"
+            label="DPWH Bridges"
             value={stats?.total_projects ?? 0}
             prefix=""
             suffix=""
@@ -129,7 +130,7 @@ export default function HeroSection() {
             decimals={1}
           />
           <StatCard
-            label="Completed Projects"
+            label="Reported Completed"
             value={stats?.completed_projects ?? 0}
             prefix=""
             suffix=""
@@ -151,7 +152,7 @@ export default function HeroSection() {
         >
           <Link href="/map">
             <button className="btn-primary flex items-center gap-2 text-sm font-semibold">
-              Explore the Map
+              Explore the bridge map
               <ArrowRight size={16} />
             </button>
           </Link>
@@ -160,7 +161,7 @@ export default function HeroSection() {
               className="btn-ghost flex items-center gap-2 rounded-lg border text-sm font-medium"
               style={{ borderColor: "var(--color-border)" }}
             >
-              Browse Verification Cases
+              Browse satellite checks
             </button>
           </Link>
         </motion.div>
@@ -183,18 +184,18 @@ export default function HeroSection() {
         >
           <Step
             number="01"
-            title="Upload coordinates"
-            body="Provide a CSV with project lat/lon, start date, end date, and status. Any country, any project type."
+            title="Public bridge records"
+            body="Every DPWH bridge contract — location, budget, status, completion date — pulled straight from the public transparency dataset."
           />
           <Step
             number="02"
-            title="Satellite analysis"
-            body="GhostWatch computes NDBI, NDVI, and BSI change between before and after Sentinel-2 composites."
+            title="Satellite change detection"
+            body="NDBI, NDVI, and BSI change between before and after Sentinel-2 composites over each bridge site."
           />
           <Step
             number="03"
-            title="See what was built"
-            body="Each project gets a classification: construction detected, partial build, or no change detected."
+            title="See what's visible"
+            body="Each checked bridge gets a read: construction detected, partial signal, or no clear change at 10m resolution."
           />
         </div>
       </motion.div>

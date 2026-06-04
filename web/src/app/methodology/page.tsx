@@ -11,8 +11,10 @@ export default function MethodologyPage() {
           How It Works
         </h1>
         <p className="mb-10 text-base" style={{ color: "var(--color-text-muted)" }}>
-          GhostWatch uses free Sentinel-2 satellite imagery and spectral change detection
-          to determine whether infrastructure projects were actually built.
+          Tulay Pinoy uses free Sentinel-2 satellite imagery and spectral change detection
+          to look for visible construction at Philippine bridge sites in the public DPWH
+          record. It is an open-source tool — the same pipeline runs on any country&apos;s
+          infrastructure data.
         </p>
 
         {/* Core insight */}
@@ -213,6 +215,10 @@ export default function MethodologyPage() {
           </h2>
           <div className="space-y-3">
             {[
+              {
+                title: "Bridges over water",
+                detail: "A new span over a river or coast is a thin line of concrete inside a buffer that is mostly water and banks. Averaged over the area, the built-up signal can stay below threshold even when the bridge was genuinely completed. This is the single biggest reason a real bridge here may show little visible change — treat such reads as a prompt to look closer, not a finding.",
+              },
               {
                 title: "Underground infrastructure",
                 detail: "Pipes, cables, and underground utilities produce no surface change. These will show as No Change regardless of actual completion.",

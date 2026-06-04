@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
+
+# DPWH contract IDs are alphanumeric (e.g. "22L00004"). Reject anything else so a
+# crafted project_id (e.g. "../../etc/passwd") can never escape the tiles dir.
+_SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
 class TileService:
@@ -12,6 +17,8 @@ class TileService:
     def get_tile_path(self, project_id: str, period: str) -> Path | None:
         """Return path to a demo tile PNG if it exists."""
         if period not in self.VALID_PERIODS:
+            return None
+        if not _SAFE_ID.match(project_id):
             return None
         path = self.DEMO_TILES_DIR / project_id / f"{period}.png"
         return path if path.exists() else None

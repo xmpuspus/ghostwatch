@@ -21,9 +21,6 @@ import {
   formatCompact,
   formatNumber,
   formatPercent,
-  VERIFICATION_COLORS,
-  VERIFICATION_LABELS,
-  PROJECT_TYPE_COLORS,
   DISCLAIMER,
 } from "@/lib/constants";
 import { api } from "@/lib/api";
@@ -38,13 +35,13 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35 } },
 };
 
-const EMPTY_MSG = "No data — run the satellite pipeline to load real project data.";
+const EMPTY_MSG = "No data — run scripts/bake_bridges.py to bake the dataset.";
 
 interface ChartData {
-  budget_by_type: { name: string; value: number; count: number }[];
-  verification: { name: string; value: number; status: string }[];
-  regional: { region: string; projects: number; value: number; completion: number; ghostRate: number }[];
-  yearly: { year: string; value: number; completed: number }[];
+  status_dist: { name: string; status: string; value: number; color: string }[];
+  budget_by_region: { region: string; value: number; count: number }[];
+  regional: { region: string; projects: number; value: number; completion: number }[];
+  yearly: { year: string; value: number; completed: number; count: number }[];
 }
 
 function EmptyState() {
@@ -94,29 +91,9 @@ export default function DashboardPage() {
       .catch(() => null);
   }, []);
 
-  const verificationSlices = (charts?.verification ?? []).map((d) => ({
-    ...d,
-    color: VERIFICATION_COLORS[d.status] ?? "#6b7280",
-    label: VERIFICATION_LABELS[d.status] ?? d.name,
-  }));
-
-  const TYPE_LABELS: Record<string, string> = {
-    ROAD: "Roads",
-    BRIDGE: "Bridges",
-    BUILDING: "Buildings",
-    FLOOD_CONTROL: "Flood Control",
-    WATER_SUPPLY: "Water Supply",
-    MULTI_PURPOSE: "Multi-Purpose",
-    SEAPORT: "Seaports",
-    AIRPORT: "Airports",
-    OTHER: "Other",
-  };
-
-  const budgetByType = (charts?.budget_by_type ?? []).map((d) => ({
-    ...d,
-    name: TYPE_LABELS[d.name.toUpperCase().replace(/ /g, "_")] ?? d.name.replace(/_/g, " "),
-    color: PROJECT_TYPE_COLORS[d.name.toUpperCase().replace(/ /g, "_")] ?? "#6b7280",
-  }));
+  const topRegions = (charts?.budget_by_region ?? []).slice(0, 12);
+  const completionRegions = (charts?.regional ?? []).slice(0, 12);
+  const checked = stats?.satellite?.total_verified ?? 0;
 
   return (
     <div
@@ -129,7 +106,8 @@ export default function DashboardPage() {
             Dashboard
           </h1>
           <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>
-            Satellite verification results across all loaded infrastructure projects
+            Every DPWH bridge in the public record. Satellite change-detection has been
+            run on a curated showcase set, shown on the Verify page.
           </p>
         </div>
 
@@ -141,17 +119,17 @@ export default function DashboardPage() {
             animate="show"
             className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4"
           >
-            <StatCard label="Total Projects" value={formatNumber(stats.total_projects ?? 0)} />
+            <StatCard label="DPWH Bridges" value={formatNumber(stats.total_projects ?? 0)} />
             <StatCard label="Total Contract Value" value={formatCompact(stats.total_value ?? 0)} />
             <StatCard
-              label="Flagged for Review"
-              value={formatNumber(stats.ghost_projects ?? 0)}
-              accent="var(--color-ghost)"
+              label="Reported Completed"
+              value={`${formatNumber(stats.completed_projects ?? 0)} · ${formatPercent(stats.completion_rate ?? 0, 0)}`}
+              accent="var(--color-verified)"
             />
             <StatCard
-              label="Satellite Verified"
-              value={formatNumber(stats.verified_count ?? 0)}
-              accent="var(--color-verified)"
+              label="Checked From Space"
+              value={formatNumber(checked)}
+              accent="var(--color-accent)"
             />
           </motion.div>
         )}
@@ -162,19 +140,19 @@ export default function DashboardPage() {
           animate="show"
           className="space-y-8"
         >
-          {/* Row 1: Verification distribution + Budget by type */}
+          {/* Row 1: Status distribution + Budget by region */}
           <motion.div variants={fadeUp} className="grid gap-6 lg:grid-cols-3">
-            {/* Verification pie */}
+            {/* Status pie */}
             <div className="card-elevated" style={{ padding: "1.25rem" }}>
-              <SectionLabel title="Verification Status" subtitle="Project count by satellite classification" />
-              {verificationSlices.length === 0 ? (
+              <SectionLabel title="Bridge Status" subtitle="Reported status across all DPWH bridges" />
+              {!charts?.status_dist?.length ? (
                 <EmptyState />
               ) : (
                 <>
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
                       <Pie
-                        data={verificationSlices}
+                        data={charts.status_dist}
                         cx="50%"
                         cy="50%"
                         innerRadius={55}
@@ -182,7 +160,7 @@ export default function DashboardPage() {
                         paddingAngle={2}
                         dataKey="value"
                       >
-                        {verificationSlices.map((entry, i) => (
+                        {charts.status_dist.map((entry, i) => (
                           <Cell key={i} fill={entry.color} />
                         ))}
                       </Pie>
@@ -192,7 +170,7 @@ export default function DashboardPage() {
                           const d = payload[0].payload;
                           return (
                             <DarkTooltip
-                              payload={[{ name: d.label, value: d.value, color: d.color }]}
+                              payload={[{ name: d.name, value: d.value, color: d.color }]}
                             />
                           );
                         }}
@@ -200,11 +178,11 @@ export default function DashboardPage() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="mt-2 space-y-1.5">
-                    {verificationSlices.map((v) => (
+                    {charts.status_dist.map((v) => (
                       <div key={v.status} className="flex items-center justify-between text-[11px]">
                         <div className="flex items-center gap-1.5">
                           <div className="h-2 w-2 rounded-full" style={{ backgroundColor: v.color }} />
-                          <span style={{ color: "var(--color-text-secondary)" }}>{v.label}</span>
+                          <span style={{ color: "var(--color-text-secondary)" }}>{v.name}</span>
                         </div>
                         <span className="stat-value text-[11px]" style={{ color: "var(--color-text-primary)" }}>
                           {formatNumber(v.value)}
@@ -216,14 +194,14 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Budget by type */}
+            {/* Budget by region */}
             <div className="card-elevated lg:col-span-2" style={{ padding: "1.25rem" }}>
-              <SectionLabel title="Budget by Project Type" subtitle="Total contract value by infrastructure category" />
-              {budgetByType.length === 0 ? (
+              <SectionLabel title="Bridge Budget by Region" subtitle="Total contract value, top regions" />
+              {!topRegions.length ? (
                 <EmptyState />
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={budgetByType} layout="vertical">
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={topRegions} layout="vertical">
                     <XAxis
                       type="number"
                       tickFormatter={(v) => formatCompact(v)}
@@ -231,8 +209,8 @@ export default function DashboardPage() {
                     />
                     <YAxis
                       type="category"
-                      dataKey="name"
-                      width={100}
+                      dataKey="region"
+                      width={110}
                       tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }}
                     />
                     <Tooltip
@@ -241,87 +219,67 @@ export default function DashboardPage() {
                         const d = payload[0].payload;
                         return (
                           <DarkTooltip
-                            label={d.name}
+                            label={d.region}
                             payload={[
-                              { name: "Value", value: d.value, color: d.color },
-                              { name: "Projects", value: d.count },
+                              { name: "Value", value: d.value, color: "var(--color-accent)" },
+                              { name: "Bridges", value: d.count },
                             ]}
                           />
                         );
                       }}
                     />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {budgetByType.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} fillOpacity={0.85} />
-                      ))}
-                    </Bar>
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="var(--color-accent)" fillOpacity={0.85} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
             </div>
           </motion.div>
 
-          {/* Row 2: Regional flagged rate */}
+          {/* Row 2: Completion rate by region */}
           <motion.div variants={fadeUp}>
             <div className="card-elevated" style={{ padding: "1.25rem" }}>
               <SectionLabel
-                title="Regional Comparison"
-                subtitle="Completion rate vs flagged rate by region"
+                title="Completion Rate by Region"
+                subtitle="Share of bridges reported completed, by region"
               />
-              {!charts?.regional?.length ? (
+              {!completionRegions.length ? (
                 <EmptyState />
               ) : (
                 <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={charts.regional}>
+                  <BarChart data={completionRegions}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis
                       dataKey="region"
                       tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
                       angle={-40}
                       textAnchor="end"
-                      height={60}
+                      height={70}
                     />
                     <YAxis
-                      yAxisId="left"
                       tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
                       tickFormatter={(v) => `${v}%`}
-                    />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
-                      tickFormatter={(v) => `${v}%`}
+                      domain={[0, 100]}
                     />
                     <Tooltip
                       content={({ payload, label }) => {
                         if (!payload?.length) return null;
+                        const d = payload[0].payload;
                         return (
                           <DarkTooltip
                             label={label}
-                            payload={payload.map((p) => ({
-                              name: String(p.name),
-                              value: typeof p.value === "number" ? parseFloat(p.value.toFixed(1)) : 0,
-                              color: String(p.color ?? ""),
-                            }))}
+                            payload={[
+                              { name: "Completion", value: d.completion, color: "#22c55e" },
+                              { name: "Bridges", value: d.projects },
+                            ]}
                           />
                         );
                       }}
                     />
-                    <Legend wrapperStyle={{ fontSize: 11, color: "var(--color-text-muted)" }} />
                     <Bar
-                      yAxisId="left"
                       dataKey="completion"
                       name="Completion %"
                       fill="#22c55e"
-                      fillOpacity={0.75}
-                      radius={[3, 3, 0, 0]}
-                    />
-                    <Bar
-                      yAxisId="right"
-                      dataKey="ghostRate"
-                      name="Flagged Rate %"
-                      fill="#ef4444"
-                      fillOpacity={0.75}
+                      fillOpacity={0.78}
                       radius={[3, 3, 0, 0]}
                     />
                   </BarChart>
@@ -330,12 +288,12 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          {/* Row 3: Budget over time */}
+          {/* Row 3: Funding over time */}
           <motion.div variants={fadeUp}>
             <div className="card-elevated" style={{ padding: "1.25rem" }}>
               <SectionLabel
-                title="Infrastructure Spending Trend"
-                subtitle="Annual budget allocation vs verified completed value"
+                title="Bridge Funding by Year"
+                subtitle="Contract value funded vs value reaching completed status"
               />
               {!charts?.yearly?.length ? (
                 <EmptyState />
@@ -367,7 +325,7 @@ export default function DashboardPage() {
                     <Line
                       type="monotone"
                       dataKey="value"
-                      name="Budget Allocated (B)"
+                      name="Funded (B)"
                       stroke="var(--color-accent)"
                       strokeWidth={2}
                       dot={{ r: 3, fill: "var(--color-accent)" }}
@@ -375,7 +333,7 @@ export default function DashboardPage() {
                     <Line
                       type="monotone"
                       dataKey="completed"
-                      name="Verified Complete (B)"
+                      name="Completed (B)"
                       stroke="var(--color-verified)"
                       strokeWidth={2}
                       dot={{ r: 3, fill: "var(--color-verified)" }}
@@ -436,4 +394,3 @@ function SectionLabel({ title, subtitle }: { title: string; subtitle: string }) 
     </div>
   );
 }
-

@@ -25,9 +25,10 @@ import { api } from "@/lib/api";
 import type { VerificationResult } from "@/types/project";
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
-  GHOST_PROJECT: <AlertTriangle size={10} />,
   VERIFIED: <CheckCircle2 size={10} />,
   PARTIAL: <HelpCircle size={10} />,
+  INCONCLUSIVE: <Clock size={10} />,
+  GHOST_PROJECT: <AlertTriangle size={10} />,
   PENDING: <Clock size={10} />,
   UNVERIFIED: <HelpCircle size={10} />,
 };
@@ -104,12 +105,10 @@ function VerifyContent() {
               color: "var(--color-text-primary)",
             }}
           >
-            <option value="ALL">All Classifications</option>
-            <option value="GHOST_PROJECT">Flagged for Review</option>
-            <option value="VERIFIED">Verified</option>
-            <option value="PARTIAL">Partial Build</option>
-            <option value="UNVERIFIED">Unverified</option>
-            <option value="PENDING">Pending</option>
+            <option value="ALL">All results</option>
+            <option value="VERIFIED">Construction detected</option>
+            <option value="PARTIAL">Partial change</option>
+            <option value="INCONCLUSIVE">No clear change</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
@@ -281,6 +280,16 @@ function VerifyContent() {
                         style={{ color: "var(--color-text-muted)" }}
                       >
                         SAR proxy used — reduced accuracy
+                      </span>
+                    )}
+                    {selected.classification === "INCONCLUSIVE" && (
+                      <span
+                        className="text-center text-[10px] leading-tight"
+                        style={{ color: "var(--color-text-muted)" }}
+                      >
+                        No construction signal at 10m resolution. For a narrow span
+                        over water this is expected — it does not mean the bridge is
+                        missing.
                       </span>
                     )}
                   </div>

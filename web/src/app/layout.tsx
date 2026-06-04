@@ -10,9 +10,18 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GhostWatch",
+  metadataBase: new URL("https://tulaypinoy.ph"),
+  title: "Tulay Pinoy — Bridges of the Philippines, verified from space",
   description:
-    "Satellite verification of government infrastructure — see whether projects were actually built, from space.",
+    "Every DPWH bridge project in the Philippines, mapped from the public record and checked against free Sentinel-2 satellite imagery. Open-source: clone it, point it at any country.",
+  openGraph: {
+    title: "Tulay Pinoy — Bridges of the Philippines, verified from space",
+    description:
+      "Every DPWH bridge project, mapped from public data and checked against Sentinel-2 satellite imagery.",
+    url: "https://tulaypinoy.ph",
+    siteName: "Tulay Pinoy",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

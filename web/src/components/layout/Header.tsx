@@ -33,7 +33,7 @@ export default function Header() {
             className="text-sm font-bold tracking-tight"
             style={{ color: "var(--color-text-primary)" }}
           >
-            GhostWatch
+            Tulay Pinoy
           </span>
         </Link>
 
