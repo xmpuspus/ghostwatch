@@ -16,6 +16,7 @@ import {
   formatNumber,
 } from "@/lib/constants";
 import BeforeAfterSlider from "@/components/satellite/BeforeAfterSlider";
+import WaybackComparison, { type WaybackRelease } from "@/components/satellite/WaybackComparison";
 import type { Project, VerificationStatus, VerificationResult } from "@/types/project";
 
 type MapStyle = "streets" | "satellite" | "light";
@@ -47,6 +48,7 @@ export default function ProjectMap() {
   const [mapStyle, setMapStyle] = useState<MapStyle>("satellite");
   const [activeFilter, setActiveFilter] = useState<VerificationStatus | "ALL">("ALL");
   const [cases, setCases] = useState<VerificationResult[]>([]);
+  const [waybackReleases, setWaybackReleases] = useState<WaybackRelease[]>([]);
   const [selected, setSelected] = useState<Project | null>(null);
 
   useEffect(() => {
@@ -74,6 +76,13 @@ export default function ProjectMap() {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((resp) => setCases(resp?.data ?? []))
       .catch(() => setCases([]));
+
+    // Esri Wayback release index — drives the on-demand historical before/after
+    // viewer for every bridge that isn't part of the baked Sentinel-2 showcase.
+    fetch("/data/wayback.json")
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((resp) => setWaybackReleases(resp?.releases ?? []))
+      .catch(() => setWaybackReleases([]));
   }, []);
 
   // project_id -> its satellite check (tiles + dates), for the modal viewer.
@@ -282,6 +291,7 @@ export default function ProjectMap() {
         <SatelliteModal
           project={selected}
           caseData={caseLookup.get(selected.id)}
+          waybackReleases={waybackReleases}
           onClose={() => setSelected(null)}
         />
       )}
@@ -292,10 +302,12 @@ export default function ProjectMap() {
 function SatelliteModal({
   project,
   caseData,
+  waybackReleases,
   onClose,
 }: {
   project: Project;
   caseData?: VerificationResult;
+  waybackReleases: WaybackRelease[];
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -314,7 +326,7 @@ function SatelliteModal({
       aria-label="Satellite check"
     >
       <div
-        className="relative w-full max-w-[460px] overflow-hidden rounded"
+        className="relative max-h-[92vh] w-full max-w-[460px] overflow-y-auto rounded"
         style={{
           backgroundColor: "var(--glass-bg-elevated)",
           border: "1px solid var(--color-border-strong)",
@@ -340,6 +352,8 @@ function SatelliteModal({
             height={300}
             classification={project.verification_status}
           />
+        ) : waybackReleases.length > 1 ? (
+          <WaybackComparison lat={project.lat} lng={project.lng} releases={waybackReleases} height={300} />
         ) : (
           <div
             className="flex h-[160px] flex-col items-center justify-center gap-2"
