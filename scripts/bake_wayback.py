@@ -20,17 +20,26 @@ CONFIG_URL = "https://s3-us-west-2.amazonaws.com/config.maptiles.arcgis.com/wayb
 OUT = Path(__file__).resolve().parent.parent / "web" / "public" / "data" / "wayback.json"
 
 
-def main() -> None:
-    req = urllib.request.Request(CONFIG_URL, headers={"User-Agent": "ghostwatch-bake"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        cfg = json.loads(r.read())
+def parse_releases(cfg: dict) -> list[dict]:
+    """Extract {rnum, date} for each Wayback release, sorted oldest-first.
 
+    Releases without a parseable YYYY-MM-DD in their itemTitle are skipped.
+    """
     releases = []
     for rnum, v in cfg.items():
         m = re.search(r"(\d{4}-\d{2}-\d{2})", v.get("itemTitle", ""))
         if m:
             releases.append({"rnum": str(rnum), "date": m.group(1)})
     releases.sort(key=lambda x: x["date"])
+    return releases
+
+
+def main() -> None:
+    req = urllib.request.Request(CONFIG_URL, headers={"User-Agent": "ghostwatch-bake"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        cfg = json.loads(r.read())
+
+    releases = parse_releases(cfg)
 
     payload = {
         "meta": {

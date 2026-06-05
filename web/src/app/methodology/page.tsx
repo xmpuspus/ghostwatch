@@ -25,6 +25,7 @@ export default function MethodologyPage() {
             ["core-insight", "Core insight"],
             ["spectral-indices", "Spectral indices"],
             ["classification", "Classification"],
+            ["historical", "Historical imagery"],
             ["composite", "Composite strategy"],
             ["limitations", "Known limitations"],
             ["sar", "SAR cloud-gap"],
@@ -204,6 +205,27 @@ export default function MethodologyPage() {
             completed-but-no-change projects for review (configurable confidence threshold,
             default 0.70); for bridges that capability is deliberately held back in favor of an
             honest &quot;inconclusive&quot;.
+          </p>
+        </section>
+
+        {/* Historical imagery — on-demand Wayback for every bridge */}
+        <section id="historical" className="mb-10 scroll-mt-20">
+          <h2 className="mb-3 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
+            Historical Imagery for Every Bridge
+          </h2>
+          <p className="mb-3 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
+            The Sentinel-2 verdict above is computed for 50 curated bridges. Every other bridge on
+            the map &mdash; all 12,558 &mdash; still opens an on-demand before/after view built from
+            the <strong>Esri World Imagery Wayback</strong> archive: high-resolution historical
+            basemap snapshots from 2014 to the present. Pick two dates and drag to compare how a site
+            changed over time.
+          </p>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+            This view is <strong>imagery only and carries no automated verdict</strong>. The dates
+            are when Esri refreshed its basemap, not necessarily when the area was re-photographed,
+            so some locations look unchanged between two dates &mdash; the viewer says so when that
+            happens. It is a way to look with your own eyes, kept deliberately separate from the
+            Sentinel-2 change detection so raw imagery is never mistaken for an accusation.
           </p>
         </section>
 

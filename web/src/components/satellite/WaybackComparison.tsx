@@ -19,6 +19,24 @@ interface Props {
 const TILE = (rnum: string) =>
   `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/${rnum}/{z}/{y}/{x}`;
 
+// A Wayback release whose imagery is unchanged at a given tile 301-redirects to
+// the canonical release that owns that imagery. Following the redirect and
+// reading the resolved release number lets us tell whether two dates actually
+// show different imagery for this spot (Esri tiles send CORS, so fetch works).
+function deg2tile(lat: number, lon: number, z: number) {
+  const n = 2 ** z;
+  const x = Math.floor(((lon + 180) / 360) * n);
+  const lr = (lat * Math.PI) / 180;
+  const y = Math.floor(((1 - Math.log(Math.tan(lr) + 1 / Math.cos(lr)) / Math.PI) / 2) * n);
+  return { x, y, z };
+}
+async function canonicalRelease(rnum: string, z: number, x: number, y: number, signal: AbortSignal) {
+  const url = `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/${rnum}/${z}/${y}/${x}`;
+  const res = await fetch(url, { redirect: "follow", signal });
+  const m = res.url.match(/\/tile\/(\d+)\//i);
+  return m ? m[1] : rnum;
+}
+
 // Thin the 194 raw releases to one roughly every ~150 days so the date pickers
 // stay legible. Esri rarely re-images a given spot more often than that, and
 // adjacent releases usually redirect to the same imagery anyway.
@@ -42,10 +60,10 @@ function thinReleases(releases: WaybackRelease[]): WaybackRelease[] {
 export default function WaybackComparison({ lat, lng, releases, height = 300 }: Props) {
   const options = useMemo(() => thinReleases(releases), [releases]);
 
-  // Default before = newest snapshot on/before 2020 (pre-construction for the
-  // 2021-2023 showcase era); after = newest available.
+  // Default before = newest snapshot on/before 2018 — a wide window back from the
+  // newest release, so a real change is more likely to be visible; after = newest.
   const defaultBefore = useMemo(() => {
-    const pre = options.filter((r) => r.date <= "2020-01-01");
+    const pre = options.filter((r) => r.date <= "2018-01-01");
     return (pre.length ? pre[pre.length - 1] : options[0])?.rnum ?? "";
   }, [options]);
   const defaultAfter = options[options.length - 1]?.rnum ?? "";
@@ -54,6 +72,7 @@ export default function WaybackComparison({ lat, lng, releases, height = 300 }: 
   const [afterRnum, setAfterRnum] = useState(defaultAfter);
   const [pos, setPos] = useState(0.5);
   const [touched, setTouched] = useState(false);
+  const [sameImagery, setSameImagery] = useState(false);
 
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -137,6 +156,28 @@ export default function WaybackComparison({ lat, lng, releases, height = 300 }: 
   useEffect(() => {
     if (afterRnum) afterLayer.current?.setUrl(TILE(afterRnum));
   }, [afterRnum]);
+
+  // Flag when the two chosen dates actually resolve to the same imagery for this
+  // spot, so the slider doesn't look broken when both halves are identical.
+  useEffect(() => {
+    if (!beforeRnum || !afterRnum) return;
+    if (beforeRnum === afterRnum) {
+      setSameImagery(true);
+      return;
+    }
+    setSameImagery(false);
+    const ctrl = new AbortController();
+    const { x, y, z } = deg2tile(lat, lng, 16);
+    Promise.all([
+      canonicalRelease(beforeRnum, z, x, y, ctrl.signal),
+      canonicalRelease(afterRnum, z, x, y, ctrl.signal),
+    ])
+      .then(([b, a]) => setSameImagery(b === a))
+      .catch(() => {
+        /* network/CORS hiccup — leave the note off rather than guess */
+      });
+    return () => ctrl.abort();
+  }, [beforeRnum, afterRnum, lat, lng]);
 
   const startHandle = (clientX: number) => {
     setTouched(true);
@@ -224,12 +265,21 @@ export default function WaybackComparison({ lat, lng, releases, height = 300 }: 
           Newer · {dateOf(afterRnum)}
         </div>
 
-        {!touched && (
+        {!touched && !sameImagery && (
           <div
             className="instrument-label pointer-events-none absolute bottom-3 left-1/2 z-[600] flex -translate-x-1/2 items-center gap-1.5 rounded px-2.5 py-1 !text-[10px]"
             style={{ backgroundColor: "rgba(11,14,15,0.82)", color: "var(--color-text-secondary)" }}
           >
             <MoveHorizontal size={11} /> Drag to compare · scroll to zoom
+          </div>
+        )}
+
+        {sameImagery && (
+          <div
+            className="pointer-events-none absolute bottom-3 left-1/2 z-[600] flex max-w-[88%] -translate-x-1/2 items-center gap-1.5 rounded px-2.5 py-1 text-center text-[10px] leading-snug"
+            style={{ backgroundColor: "rgba(11,14,15,0.86)", color: "var(--color-partial)" }}
+          >
+            Same imagery — Esri hasn&apos;t re-photographed this spot between these dates. Try other dates.
           </div>
         )}
       </div>
