@@ -8,17 +8,17 @@ Satellite verification of public infrastructure: see whether it was built, from 
 
 GhostWatch is an open-source tool. Point it at a government's infrastructure records and it cross-references each project against free Sentinel-2 satellite imagery, computing before/after spectral change to look for visible construction. It ships as a Python pipeline, a FastAPI backend, and a Next.js dashboard you can clone and run locally against the full 248,220-project Philippine DPWH dataset (PHP 6.38 trillion in contracts, 214,747 geolocated sites).
 
-**Live: [tulaypinoy.ph](https://tulaypinoy.ph)** — a curated, fully static, bridges-only build of this tool, deployed on Vercel with no backend. Every one of the Philippines' 12,558 DPWH bridge projects (PHP 382.4 billion), mapped from the public record, plus a Sentinel-2 before/after showcase over 50 real completed bridges. The Python pipeline runs at build time and bakes real data into static JSON and PNG the site reads directly off the edge. A few months ago this was an offline tool anyone could clone and deploy; this is what deploying it looks like.
+**Live: [tulaypinoy.ph](https://tulaypinoy.ph)** — a curated, fully static, bridges-only build of this tool, deployed on Vercel with no backend. Every one of the Philippines' 12,558 DPWH bridge projects (PHP 382.4 billion), mapped from the public record, plus a Sentinel-2 before/after showcase over 50 real completed bridges and on-demand historical imagery for every bridge from the Esri World Imagery Wayback archive (2014 to today). The Python pipeline runs at build time and bakes real data into static JSON and PNG the site reads directly off the edge. A few months ago this was an offline tool anyone could clone and deploy; this is what deploying it looks like.
 
 <p align="center">
   <img src="docs/demo/tour.gif" alt="Tulay Pinoy live tour" width="800">
 </p>
 
-<p align="center"><em><a href="https://tulaypinoy.ph">tulaypinoy.ph</a> — 12,558 DPWH bridges mapped from public data, with a real Sentinel-2 before/after showcase.</em></p>
+<p align="center"><em><a href="https://tulaypinoy.ph">tulaypinoy.ph</a> — 12,558 DPWH bridges mapped from public data, with a real Sentinel-2 before/after showcase and on-demand historical imagery for every bridge.</em></p>
 
 ### What the satellite actually shows
 
-At 10-meter resolution, free optical satellite reliably picks up construction on large land footprints (interchanges, bypass embankments) but often cannot resolve a narrow bridge span over water: the built-up signal is swamped by a buffer that is mostly water and banks. So the showcase reports three honest states, construction detected, partial change, and no clear change (inconclusive), and never labels a real, completed bridge a "ghost." A satellite read is a prompt for review, not a verdict. Of the 50 bridges checked, 3 show clear construction, 11 show partial change, and 36 fall below what 10-meter imagery can resolve.
+At 10-meter resolution, free optical satellite reliably picks up construction on large land footprints (interchanges, bypass embankments) but often cannot resolve a narrow bridge span over water: the built-up signal is swamped by a buffer that is mostly water and banks. So the showcase reports three honest states, construction detected, partial change, and no clear change (inconclusive), and never labels a real, completed bridge a "ghost." A satellite read is a prompt for review, not a verdict. Of the 50 bridges checked, 3 show clear construction, 11 show partial change, and 36 fall below what 10-meter imagery can resolve. Beyond those 50, every bridge on the map opens an on-demand historical before/after from the Esri World Imagery Wayback archive (2014 to today) — high-resolution imagery to inspect by eye, deliberately carrying no automated verdict so raw imagery is never mistaken for an accusation.
 
 ### Screenshots
 
