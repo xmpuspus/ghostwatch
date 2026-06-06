@@ -33,7 +33,7 @@ PARQUET = "data/raw/dpwh/dpwh_projects.parquet"
 PX = 180          # thumbnail px; sheets kept <=1600px so Read never hits the image cap
 BUF = 220         # ~440m box -> ~2.4m/px, a 10m structure is a few px (visible)
 AFTER = ("2024-01-01", "2025-12-31")
-TIER_COLOR = {"GHOST_PROJECT": (240, 83, 63), "VERIFIED": (63, 185, 80), "PARTIAL": (227, 179, 65), "INCONCLUSIVE": (118, 141, 135)}
+TIER_COLOR = {"NOT_VISIBLE": (240, 83, 63), "VERIFIED": (63, 185, 80), "PARTIAL": (227, 179, 65), "INCONCLUSIVE": (118, 141, 135)}
 
 
 def init_gee():
@@ -70,7 +70,7 @@ def font(sz):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--classification", required=True)
-    ap.add_argument("--tier", default="GHOST_PROJECT")
+    ap.add_argument("--tier", default="NOT_VISIBLE")
     ap.add_argument("--n", type=int, default=120)
     ap.add_argument("--out", default="tmp/inspect")
     ap.add_argument("--per-sheet", type=int, default=28)

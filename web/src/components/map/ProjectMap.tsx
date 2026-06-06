@@ -21,11 +21,12 @@ import type { Project, VerificationStatus, VerificationResult } from "@/types/pr
 
 type MapStyle = "streets" | "satellite" | "light";
 
-// Tier filter chips. GHOST_PROJECT (red) leads — it's the point of the map.
+// Tier filter chips. NOT_VISIBLE (red) leads: completed sites with no construction
+// visible from space. It describes the imagery, not the project.
 const TIER_FILTERS: { label: string; value: VerificationStatus | "ALL" }[] = [
   { label: "All mapped", value: "ALL" },
-  { label: "Flagged for review", value: "GHOST_PROJECT" },
-  { label: "Construction confirmed", value: "VERIFIED" },
+  { label: "No construction visible", value: "NOT_VISIBLE" },
+  { label: "Construction visible", value: "VERIFIED" },
   { label: "Partial signal", value: "PARTIAL" },
   { label: "Inconclusive", value: "INCONCLUSIVE" },
 ];
@@ -39,12 +40,12 @@ const CATEGORY_FILTERS: { label: string; value: string }[] = [
 // Always-on highlight tiers vs. viewport-culled context. The colored verdicts
 // (red/green/amber) are the product, so they always render; the faint
 // inconclusive + not-assessed backdrop is capped to the current viewport.
-const HIGHLIGHT = new Set(["GHOST_PROJECT", "VERIFIED", "PARTIAL"]);
+const HIGHLIGHT = new Set(["NOT_VISIBLE", "VERIFIED", "PARTIAL"]);
 const CONTEXT_CAP = 5000;
 
 function tierRadius(status: string, amount: number | null): number {
   const a = amount ?? 0;
-  if (status === "GHOST_PROJECT") return a >= 1e9 ? 8 : a >= 1e8 ? 6.5 : 5;
+  if (status === "NOT_VISIBLE") return a >= 1e9 ? 8 : a >= 1e8 ? 6.5 : 5;
   if (status === "VERIFIED") return a >= 1e8 ? 6 : 4.5;
   if (status === "PARTIAL") return a >= 1e8 ? 5 : 4;
   if (status === "INCONCLUSIVE") return 2.6;
@@ -53,7 +54,7 @@ function tierRadius(status: string, amount: number | null): number {
 
 function tierStyle(status: string) {
   const c = VERIFICATION_COLORS[status] ?? "#5a6663";
-  if (status === "GHOST_PROJECT")
+  if (status === "NOT_VISIBLE")
     return { color: "#ffd9d2", weight: 1, fillColor: c, fillOpacity: 0.9 };
   if (status === "VERIFIED") return { color: "transparent", weight: 0, fillColor: c, fillOpacity: 0.92 };
   if (status === "PARTIAL") return { color: "transparent", weight: 0, fillColor: c, fillOpacity: 0.88 };
@@ -138,7 +139,7 @@ export default function ProjectMap() {
   const flaggedValue = useMemo(
     () =>
       byCategory
-        .filter((p) => p.verification_status === "GHOST_PROJECT")
+        .filter((p) => p.verification_status === "NOT_VISIBLE")
         .reduce((s, p) => s + (p.contract_amount ?? 0), 0),
     [byCategory],
   );
@@ -206,11 +207,11 @@ export default function ProjectMap() {
         className="absolute left-4 top-4 z-[1000] max-h-[calc(100%-2rem)] overflow-y-auto rounded p-3"
         style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
       >
-        <p className="instrument-label">Ghost-project map · Philippines</p>
+        <p className="instrument-label">Construction from space · Philippines</p>
         <p className="stat-value mt-1 text-lg" style={{ color: "var(--color-text-primary)" }}>
-          {formatNumber(counts.GHOST_PROJECT ?? 0)}
+          {formatNumber(counts.NOT_VISIBLE ?? 0)}
           <span className="ml-1.5 text-[11px] font-normal" style={{ color: "var(--color-ghost)" }}>
-            flagged for review
+            with no construction visible
           </span>
         </p>
         <p className="mt-0.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
@@ -274,9 +275,9 @@ export default function ProjectMap() {
           className="mt-3 max-w-[210px] border-t pt-2 text-[10px] leading-snug"
           style={{ color: "var(--color-text-muted)", borderColor: "var(--color-border)" }}
         >
-          Red marks completed projects where 10m satellite shows no construction signal. A prompt
-          for review, not proof. Many flagged sites were genuinely built but sit below clean optical
-          detection. Figures from the public DPWH record.
+          Red marks completed projects where 10m satellite shows no visible construction. A prompt
+          to look, not proof: many were genuinely built but sit below clean optical detection.
+          Figures from the public DPWH record.
         </p>
       </div>
 
@@ -357,7 +358,7 @@ function SatelliteModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const flagged = project.verification_status === "GHOST_PROJECT";
+  const flagged = project.verification_status === "NOT_VISIBLE";
 
   return (
     <div
@@ -418,7 +419,7 @@ function SatelliteModal({
 function PopupCard({ project, caseData }: { project: Project; caseData?: VerificationResult }) {
   const vcolor = VERIFICATION_COLORS[project.verification_status] ?? "#768d87";
   const assessed = project.verification_status !== "UNVERIFIED";
-  const flagged = project.verification_status === "GHOST_PROJECT";
+  const flagged = project.verification_status === "NOT_VISIBLE";
   return (
     <div className="w-full" style={{ fontFamily: "var(--font-body-stack)" }}>
       <h3 className="mb-2 pr-6 text-sm font-semibold leading-tight" style={{ color: "var(--color-text-primary)" }}>
@@ -433,20 +434,20 @@ function PopupCard({ project, caseData }: { project: Project; caseData?: Verific
         </span>
       </div>
 
-      {/* Why this is flagged — the satellite read, framed as a prompt for review */}
+      {/* The satellite read, described plainly as an observation, not a claim */}
       {flagged && (
         <div
           className="mb-3 rounded p-2.5 text-[11px] leading-snug"
           style={{ backgroundColor: "rgba(240,83,63,0.1)", border: "1px solid rgba(240,83,63,0.3)", color: "var(--color-text-secondary)" }}
         >
           <span className="flex items-center gap-1.5 font-semibold" style={{ color: "var(--color-ghost)" }}>
-            <Crosshair size={12} /> Flagged for review
+            <Crosshair size={12} /> No construction visible
           </span>
           <p className="mt-1">
-            Reported complete, but 10m Sentinel-2 shows no new built-up signal here
+            Reported complete, but 10m Sentinel-2 shows no new built-up here
             {typeof project.ndbi_d === "number" ? ` (built-up index change ${project.ndbi_d >= 0 ? "+" : ""}${project.ndbi_d.toFixed(3)})` : ""}.
-            This is a candidate for ground-truth review, not proof the project is missing; narrow or
-            small structures can be genuinely built yet below optical resolution.
+            That is a prompt to look closer, not proof the project is missing: narrow or small
+            structures can be genuinely built yet sit below optical resolution.
           </p>
         </div>
       )}

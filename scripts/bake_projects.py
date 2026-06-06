@@ -1,31 +1,31 @@
 """Bake the classifier-driven, multi-category static dataset for tulaypinoy.ph.
 
-This is the overhauled pipeline. Where bake_bridges.py shipped a bridges-only,
-verdict-suppressed showcase, this script lets the satellite classifier drive the
-markers across resolvable DPWH categories (flood control first — the scandal
-epicenter and the footprint Sentinel-2 can actually see).
+The deploy maps the PRESENCE or ABSENCE of visible construction at completed DPWH
+project sites, starting with flood control. The labels are descriptive of what the
+satellite can see, never a claim about any project: a site reads as "construction
+visible", "no construction visible", "partial", or "inconclusive".
 
-Calibration finding (tmp/ghostmap-overhaul-*/run-notes.md): the classifier is a
-poor BINARY ghost detector (67-83% over-flag on flood control because most
-construction is spectrally weak). It is useful as a RANKED anomaly signal. So we
-build tiers from a continuous ghost_score, not the raw is_ghost_project flag:
+Calibration finding (tmp/ghostmap-overhaul-*/run-notes.md): the library's binary
+detector over-flags (67-83% on flood control, because most flood-control work is
+spectrally weak). So markers come from a continuous absence_score (how flat/negative
+the built-up change is), not the raw flag. Only the strongest tail is shown in red.
 
-    VERIFIED       construction_detected      satellite confirms a build (green)
-    GHOST_PROJECT  completed + flat/neg NDBI   top-ranked "no construction" (red)
-    PARTIAL        partial_construction        weak built-up signal (amber)
-    INCONCLUSIVE   assessed, ambiguous/weak    (steel)
-    UNVERIFIED     not assessable / context    (grey dots, on-demand Wayback)
+Tiers (descriptive observations, not accusations):
+    VERIFIED       construction_detected     construction visible (green)
+    NOT_VISIBLE    completed + flat/neg NDBI  no construction visible (red)
+    PARTIAL        partial_construction       partial signal (amber)
+    INCONCLUSIVE   assessed, ambiguous/weak   (steel)
+    UNVERIFIED     not assessable / context   (grey dots, on-demand Wayback)
 
-Every red marker is a CANDIDATE flagged for review, never an accusation. The
-modal shows the before/after evidence so the viewer judges for themselves.
+Absence of a visible signal has many innocent causes (small or narrow structures,
+projects finished outside the imagery window, cloud cover), so a red marker is a
+prompt to look, never proof a project is missing.
 
 No mock data. Tiers come from real Sentinel-2 deltas computed by
-scripts/calibrate_classifier.py (-> classification CSV). Projects without a
-classification row render as UNVERIFIED context.
+scripts/calibrate_classifier.py (-> classification CSV).
 
 Usage:
-    python3 scripts/bake_projects.py \
-        --classification tmp/.../flood_control_full.csv
+    python3 scripts/bake_projects.py --classification tmp/.../flood_control_full.csv
 """
 
 from __future__ import annotations
@@ -56,18 +56,19 @@ CATEGORY_TO_TYPE = {
     "water provision and storage": "WATER_SUPPLY",
 }
 
-# Ghost-score model (see run-notes.md). Higher score = built-up did NOT appear
+# Absence-score model (see run-notes.md). Higher score = built-up did NOT appear
 # where a completed project should have produced it. Centered so the flagship
-# flood-control NDBI-delta distribution puts ~the most-negative tail at score~1.
-GHOST_CENTER = 0.06   # NDBI delta at which score crosses zero
-GHOST_SPAN = 0.16     # delta range mapped to [0,1]
-GHOST_CUT = 0.62      # score >= cut AND no_change => red flagged candidate
+# flood-control NDBI-delta distribution puts the most-negative tail near score 1.
+ABSENCE_CENTER = 0.06   # NDBI delta at which score crosses zero
+ABSENCE_SPAN = 0.16     # delta range mapped to [0,1]
+ABSENCE_CUT = 0.62      # score >= cut AND no_change => red "no construction visible"
 
 DISCLAIMER = (
-    "Markers are automated change-detection on free 10m Sentinel-2 imagery and "
-    "can be wrong. A flagged project is a prompt for review, never proof of "
-    "wrongdoing; many genuinely-built projects are below clean optical detection. "
-    "Every flag needs ground-truth investigation. Figures from the public DPWH record."
+    "Markers describe what automated change-detection on free 10m Sentinel-2 imagery "
+    "can see, and can be wrong. A site with no visible construction is a prompt to look "
+    "closer, never proof a project is missing; many genuinely-built projects are below "
+    "clean optical detection. Every read needs ground-truth investigation. Figures from "
+    "the public DPWH record."
 )
 
 _STATUS_MAP = {
@@ -88,11 +89,11 @@ _STATUS_LABELS = {
     "TERMINATED": "Terminated", "NOT_YET_STARTED": "Not yet started",
 }
 _TIER_LABELS = {
-    "VERIFIED": "Construction confirmed", "GHOST_PROJECT": "Flagged for review",
+    "VERIFIED": "Construction visible", "NOT_VISIBLE": "No construction visible",
     "PARTIAL": "Partial signal", "INCONCLUSIVE": "Inconclusive", "UNVERIFIED": "Not assessed",
 }
 _TIER_COLORS = {
-    "VERIFIED": "#3fb950", "GHOST_PROJECT": "#f0533f", "PARTIAL": "#e3b341",
+    "VERIFIED": "#3fb950", "NOT_VISIBLE": "#f0533f", "PARTIAL": "#e3b341",
     "INCONCLUSIVE": "#7aa6c9", "UNVERIFIED": "#5a6663",
 }
 
@@ -129,31 +130,31 @@ def num_or_none(v: object) -> float | None:
     return float(v)
 
 
-def ghost_score(ndbi_d: float | None) -> float:
+def absence_score(ndbi_d: float | None) -> float:
     if ndbi_d is None:
         return 0.0
-    return round(clamp((GHOST_CENTER - ndbi_d) / GHOST_SPAN), 3)
+    return round(clamp((ABSENCE_CENTER - ndbi_d) / ABSENCE_SPAN), 3)
 
 
 def tier_for(status: str, change_class: str | None, ndbi_d: float | None) -> tuple[str, float | None]:
-    """Map a project to a marker tier + ghost_score.
+    """Map a project to a marker tier + absence_score.
 
-    Only completed, assessable projects can be flagged. construction_detected is
-    always green (confirmed). no_change with a high anomaly score is the red
-    candidate; partial is amber; the rest is inconclusive/context.
+    Only completed, assessable projects can read as "no construction visible".
+    construction_detected is always green (visible); no_change with a high absence
+    score is the red "not visible"; partial is amber; the rest inconclusive/context.
     """
     if change_class is None or change_class == "insufficient_data":
         return "UNVERIFIED", None
     if change_class == "construction_detected":
         return "VERIFIED", 0.0
-    score = ghost_score(ndbi_d)
+    score = absence_score(ndbi_d)
     if status != "COMPLETED":
-        return "INCONCLUSIVE", score  # only completed projects are "ghosts"
+        return "INCONCLUSIVE", score  # only completed projects read as not-visible
     if change_class == "partial_construction":
         return "PARTIAL", score
     # no_change / vegetation_cleared
-    if score >= GHOST_CUT:
-        return "GHOST_PROJECT", score
+    if score >= ABSENCE_CUT:
+        return "NOT_VISIBLE", score
     return "INCONCLUSIVE", score
 
 
@@ -211,7 +212,7 @@ def build_frame(classification: dict[str, dict]) -> pd.DataFrame:
         ndbis.append(nd)
         ndvis.append(c["ndvi_d"] if c else None)
     sub["verification_status"] = tiers
-    sub["ghost_score"] = scores
+    sub["absence_score"] = scores
     sub["change_class"] = classes
     sub["ndbi_d"] = ndbis
     sub["ndvi_d"] = ndvis
@@ -240,7 +241,7 @@ def build_geojson(df: pd.DataFrame) -> dict:
                 "status": row.status,
                 "project_type": row.project_type,
                 "verification_status": row.verification_status,
-                "ghost_score": num_or_none(row.ghost_score),
+                "absence_score": num_or_none(row.absence_score),
                 "change_class": row.change_class if isinstance(row.change_class, str) else None,
                 "ndbi_d": num_or_none(row.ndbi_d),
                 "ndvi_d": num_or_none(row.ndvi_d),
@@ -259,22 +260,22 @@ def build_geojson(df: pd.DataFrame) -> dict:
 
 
 def build_overview(df: pd.DataFrame, classification: dict) -> dict:
-    classified = df[df["verification_status"].isin(["VERIFIED", "GHOST_PROJECT", "PARTIAL", "INCONCLUSIVE"])]
-    flagged = df[df["verification_status"] == "GHOST_PROJECT"]
+    classified = df[df["verification_status"].isin(["VERIFIED", "NOT_VISIBLE", "PARTIAL", "INCONCLUSIVE"])]
+    not_visible = df[df["verification_status"] == "NOT_VISIBLE"]
     verified = df[df["verification_status"] == "VERIFIED"]
     total = len(df)
     total_value = float(df["contract_amount"].fillna(0).sum())
     completed = int((df["status"] == "COMPLETED").sum())
-    flagged_value = float(flagged["contract_amount"].fillna(0).sum())
+    not_visible_value = float(not_visible["contract_amount"].fillna(0).sum())
 
     stats = {
         "total_projects": total,
         "total_value": total_value,
         "completed_projects": completed,
         "completion_rate": round(completed / total * 100, 1) if total else 0.0,
-        "ghost_projects": int(len(flagged)),
-        "ghost_rate": round(len(flagged) / len(classified) * 100, 1) if len(classified) else 0.0,
-        "ghost_value": flagged_value,
+        "not_visible_count": int(len(not_visible)),
+        "not_visible_rate": round(len(not_visible) / len(classified) * 100, 1) if len(classified) else 0.0,
+        "not_visible_value": not_visible_value,
         "verified_count": int(len(verified)),
         "assessed_count": int(len(classified)),
         "total_contractors": int(df["contractor"].nunique()),
@@ -285,7 +286,7 @@ def build_overview(df: pd.DataFrame, classification: dict) -> dict:
         "satellite": {
             "total_verified": int(len(classified)),
             "construction_detected": int(len(verified)),
-            "flagged": int(len(flagged)),
+            "not_visible": int(len(not_visible)),
             "partial": int((df["verification_status"] == "PARTIAL").sum()),
             "inconclusive": int((df["verification_status"] == "INCONCLUSIVE").sum()),
             "data_available": bool(classification),
@@ -301,43 +302,43 @@ def build_charts(df: pd.DataFrame) -> dict:
         if st in sc.index:
             status_dist.append({"name": _STATUS_LABELS[st], "status": st, "value": int(sc[st]), "color": _STATUS_COLORS[st]})
 
-    # Flagged-candidate count + value by region — the ghost map, as a chart.
-    flagged = df[df["verification_status"] == "GHOST_PROJECT"]
-    fl = (
-        flagged[flagged["region"] != ""].groupby("region")
+    # Count + value of "no construction visible" by region.
+    nv = df[df["verification_status"] == "NOT_VISIBLE"]
+    rg = (
+        nv[nv["region"] != ""].groupby("region")
         .agg(count=("id", "count"), value=("contract_amount", "sum"))
         .reset_index().sort_values("count", ascending=False)
     )
-    flagged_by_region = [
+    not_visible_by_region = [
         {"region": r["region"], "count": int(r["count"]), "value": float(r["value"] or 0)}
-        for _, r in fl.iterrows()
+        for _, r in rg.iterrows()
     ]
 
-    # Tier distribution among assessed projects — the verdict breakdown.
+    # Tier distribution among assessed projects — the observation breakdown.
     tier_dist = []
-    for t in ["VERIFIED", "PARTIAL", "INCONCLUSIVE", "GHOST_PROJECT"]:
+    for t in ["VERIFIED", "PARTIAL", "INCONCLUSIVE", "NOT_VISIBLE"]:
         n = int((df["verification_status"] == t).sum())
         if n:
             tier_dist.append({"name": _TIER_LABELS[t], "tier": t, "value": n, "color": _TIER_COLORS[t]})
 
-    # Flagged value by funding year — is the problem growing?
+    # Value with no visible construction, by funding year.
     yr = df.dropna(subset=["infra_year"]).copy()
     yr["infra_year"] = yr["infra_year"].astype(int)
     yearly = []
     for year in sorted(yr["infra_year"].unique()):
         s = yr[yr["infra_year"] == year]
-        fl_s = s[s["verification_status"] == "GHOST_PROJECT"]
+        nv_s = s[s["verification_status"] == "NOT_VISIBLE"]
         yearly.append({
             "year": str(year),
             "value": round(float(s["contract_amount"].fillna(0).sum()) / 1e9, 3),
-            "flagged": round(float(fl_s["contract_amount"].fillna(0).sum()) / 1e9, 3),
+            "not_visible": round(float(nv_s["contract_amount"].fillna(0).sum()) / 1e9, 3),
             "count": int(len(s)),
-            "flagged_count": int(len(fl_s)),
+            "not_visible_count": int(len(nv_s)),
         })
 
     return envelope({
         "status_dist": status_dist,
-        "flagged_by_region": flagged_by_region,
+        "not_visible_by_region": not_visible_by_region,
         "tier_dist": tier_dist,
         "yearly": yearly,
     })
@@ -363,8 +364,8 @@ def main() -> None:
     tc = df["verification_status"].value_counts().to_dict()
     print(f"Projects: {len(df)}  classified rows: {len(classification)}")
     print("Tier counts:", {k: int(v) for k, v in tc.items()})
-    fl = df[df["verification_status"] == "GHOST_PROJECT"]
-    print(f"Flagged candidates: {len(fl)}  value: ₱{fl['contract_amount'].fillna(0).sum()/1e9:.1f}B")
+    nv = df[df["verification_status"] == "NOT_VISIBLE"]
+    print(f"No construction visible: {len(nv)}  value: ₱{nv['contract_amount'].fillna(0).sum()/1e9:.1f}B")
 
     OUT.mkdir(parents=True, exist_ok=True)
     hashes = {}
@@ -379,8 +380,8 @@ def main() -> None:
         "total_projects": len(df),
         "with_coordinates": int(df[["lat", "lng"]].notna().all(axis=1).sum()),
         "classified_count": len(classification),
-        "flagged_count": int(len(fl)),
-        "ghost_cut": GHOST_CUT,
+        "not_visible_count": int(len(nv)),
+        "absence_cut": ABSENCE_CUT,
         "sha256": hashes,
     }
     write_json(OUT / "manifest.json", manifest)

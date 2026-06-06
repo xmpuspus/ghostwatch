@@ -1,1 +1,1 @@
-Tulay Pinoy. Ghost projects, from space. Completed DPWH projects in the Philippines checked against free Sentinel-2 satellite imagery; where nothing was built, the project is flagged for review.
+Tulay Pinoy. Construction, from space. Completed DPWH projects in the Philippines checked against free Sentinel-2 satellite imagery, mapping where construction is visible from space and where it is not.

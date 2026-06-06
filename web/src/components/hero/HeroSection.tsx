@@ -109,7 +109,7 @@ export default function HeroSection() {
           className="font-display text-[15vw] font-extrabold leading-[0.92] tracking-tight sm:text-6xl md:text-7xl lg:text-8xl"
           style={{ color: "var(--color-text-primary)" }}
         >
-          <span className="block">Ghost projects,</span>
+          <span className="block">Construction,</span>
           <span className="block" style={{ color: "var(--color-accent)" }}>
             from space.
           </span>
@@ -124,9 +124,10 @@ export default function HeroSection() {
           style={{ color: "var(--color-text-secondary)" }}
         >
           Completed DPWH projects across the Philippines, mapped from public data and
-          checked against free Sentinel-2 imagery. Where the satellite shows no
-          construction at a finished project, we flag it for review, a prompt to look
-          closer, never proof. Open source: clone it, point it at any country.
+          checked against free Sentinel-2 imagery for visible construction. Where the
+          satellite sees it the map says so; where it does not, it says that too, a
+          record of what is visible from space, never a claim about any project. Open
+          source: clone it, point it at any country.
         </motion.p>
 
         <motion.div
@@ -138,7 +139,7 @@ export default function HeroSection() {
         >
           <Link href="/map">
             <button className="btn-primary flex w-full items-center justify-center gap-2 sm:w-auto">
-              Explore the ghost map
+              Explore the map
               <ArrowRight size={15} />
             </button>
           </Link>
@@ -171,9 +172,9 @@ export default function HeroSection() {
             lead
           />
           <Ledger
-            label="Flagged for Review"
-            value={stats?.ghost_projects ?? 0}
-            source="No satellite signal"
+            label="No Construction Visible"
+            value={stats?.not_visible_count ?? 0}
+            source="Not seen from space"
             ghost
           />
           <Ledger
@@ -202,8 +203,8 @@ export default function HeroSection() {
           />
           <Step
             n="03"
-            title="Flag what's missing"
-            body="A completed project with no construction signal at 10m is flagged for review, a prompt to look closer, never proof of wrongdoing."
+            title="Present or absent"
+            body="Each completed site reads as construction visible or not visible at 10m, a prompt to look closer, never proof of wrongdoing."
           />
         </div>
         <p

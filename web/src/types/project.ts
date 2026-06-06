@@ -9,7 +9,7 @@ export type VerificationStatus =
   | "VERIFIED"
   | "PARTIAL"
   | "INCONCLUSIVE"
-  | "GHOST_PROJECT"
+  | "NOT_VISIBLE"
   | "UNVERIFIED"
   | "PENDING";
 
@@ -51,7 +51,7 @@ export interface Project {
   verification_status: VerificationStatus;
   satellite_score: number | null;
   has_satellite_image: boolean;
-  ghost_score?: number | null;
+  absence_score?: number | null;
   change_class?: string | null;
   ndbi_d?: number | null;
   ndvi_d?: number | null;
@@ -88,7 +88,7 @@ export interface RedFlag {
 export interface SatelliteOverview {
   total_verified: number;
   construction_detected?: number;
-  flagged?: number;
+  not_visible?: number;
   partial?: number;
   inconclusive?: number;
   avg_confidence?: number;
@@ -100,9 +100,9 @@ export interface OverviewStats {
   total_value: number;
   completed_projects: number;
   completion_rate: number;
-  ghost_projects: number;
-  ghost_rate: number;
-  ghost_value?: number;
+  not_visible_count: number;
+  not_visible_rate: number;
+  not_visible_value?: number;
   assessed_count?: number;
   verified_count: number;
   total_contractors: number;
@@ -125,7 +125,7 @@ export interface RegionalData {
   total_projects: number;
   total_value: number;
   completion_rate: number;
-  ghost_rate: number;
+  not_visible_rate: number;
   contractor_count: number;
   hhi: number;
   per_capita_spending: number;

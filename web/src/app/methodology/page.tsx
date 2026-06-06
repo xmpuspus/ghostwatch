@@ -15,9 +15,9 @@ export default function MethodologyPage() {
         <p className="mb-10 text-base" style={{ color: "var(--color-text-muted)" }}>
           Tulay Pinoy uses free Sentinel-2 satellite imagery and spectral change detection
           to look for visible construction at completed Philippine DPWH project sites,
-          starting with flood control, the category at the centre of the 2025 ghost-project
-          scandal and the one whose footprints 10m imagery can actually resolve. Where a
-          finished project shows no construction signal, it is flagged for review. It is an
+          starting with flood control, the category at the centre of the 2025 infrastructure-spending
+          review and the one whose footprints 10m imagery can actually resolve. Each
+          completed site reads as construction visible or not visible from space. It is an
           open-source tool: the same pipeline runs on any country&apos;s infrastructure data.
         </p>
 
@@ -170,9 +170,9 @@ export default function MethodologyPage() {
                     color: "var(--color-text-muted)",
                   },
                   {
-                    label: "Flagged for Review",
-                    condition: "Completed + built-up index flat or falling (top of anomaly rank)",
-                    interp: "A candidate: no construction visible where a finished project should show it",
+                    label: "No Construction Visible",
+                    condition: "Completed + built-up index flat or falling (top of absence rank)",
+                    interp: "No construction visible where a finished project should show it. A prompt to look, not a claim",
                     color: "var(--color-ghost)",
                   },
                 ].map((row) => (
@@ -206,17 +206,17 @@ export default function MethodologyPage() {
             </table>
           </div>
           <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
-            One honest caveat up front: as a plain yes/no detector this method over-flags badly.
-            Run as a binary &quot;built or not&quot; test on completed flood-control projects, it
-            flags two-thirds to four-fifths of them, because most flood-control structures
-            (concrete on already-bare riverbanks) produce a weak spectral signal, not because they
-            are all ghosts. So we do not use the raw flag. Instead every assessed project gets a
-            continuous <strong>anomaly score</strong> from how flat or falling its built-up index is,
+            One honest caveat up front: as a plain yes/no detector this method is far too blunt.
+            Run as a binary &quot;built or not&quot; test on completed flood-control projects, it reads
+            two-thirds to four-fifths of them as absent, because most flood-control structures
+            (concrete on already-bare riverbanks) produce a weak spectral signal, not because the work
+            is missing. So we do not use that raw call. Instead every assessed project gets a
+            continuous <strong>absence score</strong> from how flat or falling its built-up index is,
             and only the strongest tail (completed projects where the built-up index actually
-            held flat or dropped) is surfaced in red as <strong>flagged for review</strong>.
-            That cut is tuned so the red set is roughly the same share that the government&apos;s own
-            Independent Commission for Infrastructure confirmed as ghost flood-control projects
-            (about one in twenty reviewed). A red marker is a candidate for ground-truth review, never
+            held flat or dropped) is shown in red as <strong>no construction visible</strong>.
+            That cut is deliberately conservative, well below the share the government&apos;s own
+            Independent Commission for Infrastructure reviewed and confirmed as anomalous
+            (about one in twenty). A red marker is a prompt for ground-truth review, never
             proof: narrow or small structures can be genuinely built yet sit below optical resolution.
           </p>
         </section>
@@ -230,8 +230,8 @@ export default function MethodologyPage() {
             The Sentinel-2 verdict drives the marker colour. Every project on the map also opens an
             on-demand before/after view built from the <strong>Esri World Imagery Wayback</strong>
             archive: high-resolution historical basemap snapshots from 2014 to the present. Pick two
-            dates and drag to compare how a site changed over time. For a flagged project, look
-            for whether the structure ever actually appears.
+            dates and drag to compare how a site changed over time. Where construction is not visible,
+            look for whether the structure ever actually appears.
           </p>
           <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
             This view is <strong>imagery only and carries no automated verdict</strong>. The dates

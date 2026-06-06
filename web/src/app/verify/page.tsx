@@ -21,7 +21,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   VERIFIED: <CheckCircle2 size={11} />,
   PARTIAL: <HelpCircle size={11} />,
   INCONCLUSIVE: <Clock size={11} />,
-  GHOST_PROJECT: <AlertTriangle size={11} />,
+  NOT_VISIBLE: <AlertTriangle size={11} />,
   PENDING: <Clock size={11} />,
   UNVERIFIED: <HelpCircle size={11} />,
 };
@@ -100,8 +100,8 @@ function VerifyContent() {
           </h1>
           <p className="mt-1 text-xs leading-snug" style={{ color: "var(--color-text-muted)" }}>
             Detailed Sentinel-2 before/after reads on completed bridges, where the imagery is clear
-            enough to publish a verdict. The flags on the ghost map come from the same change-detection,
-            run at scale. Pick a case to see its read.
+            enough to read directly. The map&apos;s presence/absence calls come from the same
+            change-detection, run at scale. Pick a case to see its read.
           </p>
         </div>
 
@@ -287,7 +287,7 @@ function VerifyContent() {
                   <span>
                     No clear construction signal at 10m resolution. For a narrow span over water this
                     is expected, and does not mean the bridge is missing. Reported as inconclusive,
-                    never as a ghost.
+                    never as a claim about the project.
                   </span>
                 </div>
               )}

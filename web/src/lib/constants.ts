@@ -2,16 +2,16 @@ export const VERIFICATION_COLORS: Record<string, string> = {
   VERIFIED: "#3fb950",
   PARTIAL: "#e3b341",
   INCONCLUSIVE: "#7aa6c9", // steel blue — "checked, no clear signal"; visible, neutral, not the teal accent
-  GHOST_PROJECT: "#f0533f",
+  NOT_VISIBLE: "#f0533f",
   UNVERIFIED: "#5a6663",
   PENDING: "#768d87",
 };
 
 export const VERIFICATION_LABELS: Record<string, string> = {
-  VERIFIED: "Construction detected",
+  VERIFIED: "Construction visible",
   PARTIAL: "Partial change",
   INCONCLUSIVE: "No clear change",
-  GHOST_PROJECT: "Flagged for Review",
+  NOT_VISIBLE: "No construction visible",
   UNVERIFIED: "Not yet checked",
   PENDING: "Pending",
 };

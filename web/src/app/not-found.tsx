@@ -18,7 +18,7 @@ export default function NotFound() {
       </p>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Link href="/map">
-          <button className="btn-primary w-full sm:w-auto">Back to the ghost map</button>
+          <button className="btn-primary w-full sm:w-auto">Back to the map</button>
         </Link>
         <Link href="/">
           <button className="btn-ghost w-full sm:w-auto">Home</button>

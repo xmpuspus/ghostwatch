@@ -8,17 +8,17 @@ Satellite verification of public infrastructure: see whether it was built, from 
 
 GhostWatch is an open-source tool. Point it at a government's infrastructure records and it cross-references each project against free Sentinel-2 satellite imagery, computing before/after spectral change to look for visible construction. It ships as a Python pipeline, a FastAPI backend, and a Next.js dashboard you can clone and run locally against the full 248,220-project Philippine DPWH dataset (PHP 6.38 trillion in contracts, 214,747 geolocated sites).
 
-**Live: [tulaypinoy.ph](https://tulaypinoy.ph)** is a fully static build of this tool, deployed on Vercel with no backend, that turns the satellite check into a ghost-project map. It leads with flood control: the category at the centre of the Philippines' 2025 ghost-project investigations, and the footprint 10m imagery can actually resolve. Every completed flood-control project is run through Sentinel-2 change detection. Where a finished project shows no construction signal it is flagged for review (480 flagged, PHP 20.2 billion), shown in red next to the projects where construction is confirmed from space (549) and the wider DPWH record (42,305 projects mapped). Bridges are mapped alongside as context. A flagged project is a candidate for review, never an accusation. The Python pipeline bakes the real record into static JSON the site reads off the edge.
+**Live: [tulaypinoy.ph](https://tulaypinoy.ph)** is a fully static build of this tool, deployed on Vercel with no backend, that maps where construction is visible from space and where it is not. It leads with flood control: the category at the centre of the Philippines' 2025 infrastructure-spending review, and the footprint 10m imagery can actually resolve. Every completed flood-control project is run through Sentinel-2 change detection. Where a finished project shows no construction signal it is marked no construction visible (480 sites, PHP 20.2 billion), shown in red next to the projects where construction is confirmed from space (549) and the wider DPWH record (42,305 projects mapped). Bridges are mapped alongside as context. A site with no visible construction is a prompt to look, never an accusation. The Python pipeline bakes the real record into static JSON the site reads off the edge.
 
 <p align="center">
   <img src="docs/demo/tour.gif" alt="Tulay Pinoy live tour" width="800">
 </p>
 
-<p align="center"><em><a href="https://tulaypinoy.ph">tulaypinoy.ph</a>: completed DPWH flood-control projects checked from space, the ones with no construction signal flagged for review in red, with on-demand historical imagery for every project.</em></p>
+<p align="center"><em><a href="https://tulaypinoy.ph">tulaypinoy.ph</a>: completed DPWH flood-control projects checked from space, the ones with no construction visible marked in red, with on-demand historical imagery for every project.</em></p>
 
 ### What the satellite actually shows
 
-At 10-meter resolution, free optical satellite picks up construction on large footprints (cleared ground, new built-up) but cannot resolve thin or small structures. As a plain built-or-not test it over-flags badly: run as a binary check on completed flood-control projects, it flags two-thirds to four-fifths of them, because most flood-control work (concrete on an already-bare riverbank) barely moves the built-up index. So the map does not use that raw flag. Every assessed project gets a continuous anomaly score, and only the strongest tail (completed projects where the built-up index actually held flat or fell) is shown in red as flagged for review: 480 of 21,356 assessed flood-control projects, about 2 percent, a deliberately conservative cut (the government's own Independent Commission for Infrastructure confirmed roughly 5 percent of the flood-control projects it reviewed as ghosts). The opposite tail, 549 projects showing clear new clearing and built-up, is marked construction confirmed; the rest is partial or inconclusive. A flagged project is a prompt for review, not a verdict: many flagged sites were genuinely built but sit below what 10m can resolve, which is why every project also opens an on-demand historical before/after from the Esri World Imagery Wayback archive (2014 to today) to inspect by eye.
+At 10-meter resolution, free optical satellite picks up construction on large footprints (cleared ground, new built-up) but cannot resolve thin or small structures. As a plain built-or-not test it reads absent far too often: run as a binary check on completed flood-control projects, it returns no signal on two-thirds to four-fifths of them, because most flood-control work (concrete on an already-bare riverbank) barely moves the built-up index. So the map does not use that raw call. Every assessed project gets a continuous absence score, and only the strongest tail (completed projects where the built-up index actually held flat or fell) is shown in red as no construction visible: 480 of 21,356 assessed flood-control projects, about 2 percent, a deliberately conservative cut. The opposite tail, 549 projects showing clear new clearing and built-up, is marked construction visible; the rest is partial or inconclusive. No construction visible is a prompt to look, not a verdict: many of these sites were genuinely built but sit below what 10m can resolve, which is why every project also opens an on-demand historical before/after from the Esri World Imagery Wayback archive (2014 to today) to inspect by eye.
 
 ### Screenshots
 
@@ -30,17 +30,17 @@ At 10-meter resolution, free optical satellite picks up construction on large fo
 |:---:|:---:|
 | ![Verify](docs/screenshots/verify.png) | ![Methodology](docs/screenshots/methodology.png) |
 
-<p align="center"><em>A remote-sensing instrument console: completed DPWH projects on a satellite basemap with flagged candidates in red, ghost-rate and budget analytics, before/after spectral comparison, and the full methodology.</em></p>
+<p align="center"><em>A remote-sensing instrument console: completed DPWH projects on a satellite basemap with no-construction-visible sites in red, presence and budget analytics, before/after spectral comparison, and the full methodology.</em></p>
 
 ---
 
 ## The Problem
 
-Ghost projects (government contracts reported as complete with no physical evidence of construction) represent a documented accountability gap across public infrastructure programs. Manual field audits cost thousands of dollars per site and realistically cover less than 1% of active contracts. With PHP 6.38 trillion spread across 248,220 DPWH projects and only 11,161 contractors on record, the gap between reported and verifiable completion cannot be closed by inspection alone.
+Public contracts reported as complete without independent confirmation of construction represent a documented accountability gap across infrastructure programs. Manual field audits cost thousands of dollars per site and realistically cover less than 1% of active contracts. With PHP 6.38 trillion spread across 248,220 DPWH projects and only 11,161 contractors on record, the gap between reported and verifiable completion cannot be closed by inspection alone.
 
 Sentinel-2 satellite imagery revisits every point on Earth every five days at 10-meter resolution, free of charge. GhostWatch automates what a field auditor does, comparing before and after, at the scale of a national infrastructure program.
 
-> **Disclaimer:** Verification results are based on automated satellite analysis and may contain errors. A project flagged for review is a statistical indicator that warrants further investigation; it is not a finding of fraud or irregularity. Construction of small structures, underground works, or projects completed outside the satellite acquisition window may not be detectable at 10-meter resolution. All source data is public record. Conclusions about individual projects must not be drawn without independent manual verification.
+> **Disclaimer:** Verification results are based on automated satellite analysis and may contain errors. A project shown with no visible construction is a statistical indicator that warrants further investigation; it is not a finding of fraud or irregularity. Construction of small structures, underground works, or projects completed outside the satellite acquisition window may not be detectable at 10-meter resolution. All source data is public record. Conclusions about individual projects must not be drawn without independent manual verification.
 
 ---
 
@@ -136,7 +136,7 @@ cd web && npm run dev      # UI on :3000
 
 ## Live deployment: tulaypinoy.ph
 
-[tulaypinoy.ph](https://tulaypinoy.ph) is a separate outcome from the local tool above: a **fully static** snapshot served by Vercel with no backend. The Python pipeline runs once at build time and bakes the real DPWH record plus satellite change-detection into static files the Next.js app reads directly. It leads with **flood control**, the category at the centre of the 2025 ghost-project investigations and the one whose footprints 10m imagery can resolve; bridges are mapped alongside as context.
+[tulaypinoy.ph](https://tulaypinoy.ph) is a separate outcome from the local tool above: a **fully static** snapshot served by Vercel with no backend. The Python pipeline runs once at build time and bakes the real DPWH record plus satellite change-detection into static files the Next.js app reads directly. It leads with **flood control**, the category at the centre of the 2025 infrastructure-spending review and the one whose footprints 10m imagery can resolve; bridges are mapped alongside as context.
 
 ```bash
 # 1. Classify completed projects against Sentinel-2 (Google Earth Engine).
@@ -153,7 +153,7 @@ cd web && npm run build    # output: 'export' -> web/out/
 vercel deploy --prod       # or push to main (git auto-deploy, rootDir=web)
 ```
 
-The frontend ([`web/`](web/)) is the same dashboard as the local tool, switched to `output: 'export'` and reading `/data/*` instead of the API. `web/vercel.json` adds the security headers and edge caching. No mock data is used anywhere: every published number is recomputed from the DPWH parquet, and every marker comes from real Sentinel-2 change-detection. A flagged project is a candidate for review, never an accusation. See [`scripts/calibrate_classifier.py`](scripts/calibrate_classifier.py) and [`scripts/bake_projects.py`](scripts/bake_projects.py).
+The frontend ([`web/`](web/)) is the same dashboard as the local tool, switched to `output: 'export'` and reading `/data/*` instead of the API. `web/vercel.json` adds the security headers and edge caching. No mock data is used anywhere: every published number is recomputed from the DPWH parquet, and every marker comes from real Sentinel-2 change-detection. A site with no visible construction is a prompt to look, never an accusation. See [`scripts/calibrate_classifier.py`](scripts/calibrate_classifier.py) and [`scripts/bake_projects.py`](scripts/bake_projects.py).
 
 ---
 
@@ -248,9 +248,9 @@ GhostWatch ships a Next.js 14 frontend with five views, all dark-themed.
 | Page | Path | Description |
 |------|------|-------------|
 | **Hero** | `/` | Landing page with animated project counters, satellite background, and call to action |
-| **Map** | `/map` | Interactive map of 214,747 geolocated projects with satellite overlay and status/flag filters |
+| **Map** | `/map` | Interactive map of 214,747 geolocated projects with satellite overlay and status and tier filters |
 | **Verify** | `/verify` | Before/after Sentinel-2 slider, spectral index bars, classification and confidence scoring |
-| **Dashboard** | `/dashboard` | Regional breakdown — flagged counts, total budget, review rate by region and project type |
+| **Dashboard** | `/dashboard` | Regional breakdown: no-construction-visible counts, total budget, and not-visible rate by region and project type |
 | **Methodology** | `/methodology` | Spectral index formulas, classification thresholds, and confidence scoring |
 
 ---
@@ -279,7 +279,7 @@ Change is computed as `after_index − before_index`. Default thresholds (config
 | `no_change` | All deltas below thresholds | 1.0 − max(abs(NDBI delta), abs(NDVI delta)) |
 | `insufficient_data` | NDBI or NDVI is null/NaN | 0.0 |
 
-### Ghost flag logic
+### Flag-for-review logic
 
 A project is flagged for review when all three conditions hold:
 
@@ -301,7 +301,7 @@ The confidence threshold for `no_change` flags defaults to 0.70. This intentiona
 | Before/after comparison | Automated 90-day composites | Manual photography | None | Manual |
 | Philippines DPWH (248K) | Pre-built adapter | Spreadsheet import | Partial | None |
 | Construction classification | 5-class + confidence score | Expert judgment | None | None |
-| Ghost flag logic | Threshold-based, configurable | Human judgment | None | None |
+| Flag-for-review logic | Threshold-based, configurable | Human judgment | None | None |
 | Open source | MIT | N/A | ODbL | MIT / Apache |
 
 ---
@@ -531,7 +531,7 @@ ghostwatch verify 14.5995 120.9842 \
 | `GHOSTWATCH_NDBI_CHANGE_THRESHOLD` | `0.10` | Minimum NDBI delta for built-up detection |
 | `GHOSTWATCH_NDVI_CHANGE_THRESHOLD` | `0.15` | Minimum NDVI delta for vegetation change |
 | `GHOSTWATCH_BSI_CHANGE_THRESHOLD` | `0.10` | Minimum BSI delta for bare-soil signal |
-| `GHOSTWATCH_GHOST_CONFIDENCE_THRESHOLD` | `0.70` | Confidence floor for ghost review flag |
+| `GHOSTWATCH_GHOST_CONFIDENCE_THRESHOLD` | `0.70` | Confidence floor for the no-change review flag |
 | `GHOSTWATCH_SATELLITE_BUFFER_METERS` | `500` | Buffer radius around project coordinate |
 | `GHOSTWATCH_SATELLITE_CLOUD_THRESHOLD` | `20` | Maximum scene cloud cover percentage |
 | `GHOSTWATCH_DATA_DIR` | `data` | Root data directory |
@@ -593,7 +593,7 @@ All data used by GhostWatch is publicly available. No proprietary or restricted 
 
 ## Disclaimer
 
-Verification results produced by GhostWatch are based on automated analysis of publicly available satellite imagery. Results may contain errors due to cloud cover, satellite acquisition timing, project scale relative to 10-meter resolution, or mismatched coordinate data. A project flagged for review is a statistical indicator that warrants further investigation; it is not a finding of fraud or irregularity. Conclusions about individual projects or contractors must not be drawn without independent manual verification. All source data (DPWH records, Sentinel-2 imagery) is public record.
+Verification results produced by GhostWatch are based on automated analysis of publicly available satellite imagery. Results may contain errors due to cloud cover, satellite acquisition timing, project scale relative to 10-meter resolution, or mismatched coordinate data. A project shown with no visible construction is a statistical indicator that warrants further investigation; it is not a finding of fraud or irregularity. Conclusions about individual projects or contractors must not be drawn without independent manual verification. All source data (DPWH records, Sentinel-2 imagery) is public record.
 
 ---
 

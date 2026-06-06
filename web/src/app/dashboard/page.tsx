@@ -23,9 +23,9 @@ import type { OverviewStats } from "@/types/project";
 
 interface ChartData {
   status_dist: { name: string; status: string; value: number; color: string }[];
-  flagged_by_region: { region: string; count: number; value: number }[];
+  not_visible_by_region: { region: string; count: number; value: number }[];
   tier_dist: { name: string; tier: string; value: number; color: string }[];
-  yearly: { year: string; value: number; flagged: number; count: number; flagged_count: number }[];
+  yearly: { year: string; value: number; not_visible: number; count: number; not_visible_count: number }[];
 }
 
 const AXIS = { fontSize: 11, fill: "var(--color-text-muted)", fontFamily: "var(--font-mono-stack)" };
@@ -72,9 +72,9 @@ export default function DashboardPage() {
     api.analytics.charts().then((r) => setCharts(r.data as ChartData)).catch(() => null);
   }, []);
 
-  const flaggedRegions = (charts?.flagged_by_region ?? []).slice(0, 14);
-  const ghostCount = stats?.ghost_projects ?? 0;
-  const ghostValue = stats?.ghost_value ?? 0;
+  const nvRegions = (charts?.not_visible_by_region ?? []).slice(0, 14);
+  const nvCount = stats?.not_visible_count ?? 0;
+  const nvValue = stats?.not_visible_value ?? 0;
   const assessed = stats?.assessed_count ?? stats?.satellite?.total_verified ?? 0;
   const confirmed = stats?.verified_count ?? 0;
 
@@ -86,8 +86,8 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <p className="mt-1.5 max-w-2xl text-sm" style={{ color: "var(--color-text-muted)" }}>
-          Completed DPWH projects run through Sentinel-2 change-detection. Flagged candidates show no
-          construction signal from space. A prompt for review, never proof of wrongdoing.
+          Completed DPWH projects run through Sentinel-2 change-detection, showing where construction
+          is visible from space and where it is not. A prompt to look, never proof of wrongdoing.
         </p>
 
         {/* Stat ledger */}
@@ -98,21 +98,21 @@ export default function DashboardPage() {
           >
             <Stat label="Projects Mapped" value={formatNumber(stats.total_projects ?? 0)} />
             <Stat label="Total Contract Value" value={formatCompact(stats.total_value ?? 0)} />
-            <Stat label="Flagged for Review" value={formatNumber(ghostCount)} ghost />
-            <Stat label="Flagged Contract Value" value={formatCompact(ghostValue)} ghost />
+            <Stat label="No Construction Visible" value={formatNumber(nvCount)} ghost />
+            <Stat label="Value, Not Visible" value={formatCompact(nvValue)} ghost />
           </div>
         )}
         {stats && (
           <p className="mt-2 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
             {formatNumber(assessed)} projects assessed from space · {formatNumber(confirmed)} with
-            construction confirmed · flagged rate {formatPercent(stats.ghost_rate ?? 0, 1)} of assessed
+            construction visible · no construction visible at {formatPercent(stats.not_visible_rate ?? 0, 1)} of assessed
           </p>
         )}
 
         <div className="mt-8 space-y-6">
           {/* Row 1 */}
           <div className="grid gap-6 lg:grid-cols-3">
-            <Panel title="Satellite Verdicts" subtitle="Change-detection outcome across assessed projects">
+            <Panel title="Satellite Observations" subtitle="What the imagery shows across assessed projects">
               {!charts?.tier_dist?.length ? (
                 <EmptyState />
               ) : (
@@ -160,16 +160,16 @@ export default function DashboardPage() {
               )}
             </Panel>
 
-            <Panel className="lg:col-span-2" title="Flagged Candidates by Region" subtitle="Completed projects with no construction signal">
-              {!flaggedRegions.length ? (
+            <Panel className="lg:col-span-2" title="No Construction Visible, by Region" subtitle="Completed projects with no visible construction from space">
+              {!nvRegions.length ? (
                 <EmptyState />
               ) : (
                 <>
                   <p className="sr-only">
-                    Horizontal bar chart: count of flagged candidate projects by region.
+                    Horizontal bar chart: count of projects with no construction visible, by region.
                   </p>
                   <ResponsiveContainer width="100%" height={340}>
-                    <BarChart data={flaggedRegions} layout="vertical" margin={{ left: 8, right: 16 }}>
+                    <BarChart data={nvRegions} layout="vertical" margin={{ left: 8, right: 16 }}>
                       <XAxis
                         type="number"
                         domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.05)]}
@@ -184,7 +184,7 @@ export default function DashboardPage() {
                             <Tip
                               label={payload[0].payload.region}
                               rows={[
-                                { name: "Flagged", value: formatNumber(payload[0].payload.count), color: "var(--color-ghost)" },
+                                { name: "Not visible", value: formatNumber(payload[0].payload.count), color: "var(--color-ghost)" },
                                 { name: "Value", value: formatCompact(payload[0].payload.value) },
                               ]}
                             />
@@ -199,15 +199,15 @@ export default function DashboardPage() {
             </Panel>
           </div>
 
-          {/* Row 2 — flagged value over time */}
-          <Panel title="Flagged Value by Funding Year" subtitle="Total funded vs flagged-candidate value, in billions of pesos">
+          {/* Row 2 — not-visible value over time */}
+          <Panel title="Value With No Construction Visible, by Funding Year" subtitle="Total funded vs not-visible value, in billions of pesos">
             {!charts?.yearly?.length ? (
               <EmptyState />
             ) : (
               <>
                 <p className="sr-only">
-                  Line chart: total funded contract value versus flagged-candidate value by funding
-                  year, in billions of pesos.
+                  Line chart: total funded contract value versus value with no construction visible,
+                  by funding year, in billions of pesos.
                 </p>
                 <ResponsiveContainer width="100%" height={260}>
                   <LineChart data={charts.yearly} margin={{ top: 8, right: 12 }}>
@@ -230,7 +230,7 @@ export default function DashboardPage() {
                     />
                     <Legend wrapperStyle={{ fontSize: 11, fontFamily: "var(--font-mono-stack)" }} />
                     <Line type="monotone" dataKey="value" name="Funded" stroke="var(--color-accent)" strokeWidth={2} dot={{ r: 2.5, fill: "var(--color-accent)" }} />
-                    <Line type="monotone" dataKey="flagged" name="Flagged" stroke="var(--color-ghost)" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 2.5, fill: "var(--color-ghost)" }} />
+                    <Line type="monotone" dataKey="not_visible" name="Not visible" stroke="var(--color-ghost)" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 2.5, fill: "var(--color-ghost)" }} />
                   </LineChart>
                 </ResponsiveContainer>
               </>
