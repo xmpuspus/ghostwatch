@@ -14,9 +14,11 @@ export default function MethodologyPage() {
         </h1>
         <p className="mb-10 text-base" style={{ color: "var(--color-text-muted)" }}>
           Tulay Pinoy uses free Sentinel-2 satellite imagery and spectral change detection
-          to look for visible construction at Philippine bridge sites in the public DPWH
-          record. It is an open-source tool: the same pipeline runs on any country&apos;s
-          infrastructure data.
+          to look for visible construction at completed Philippine DPWH project sites,
+          starting with flood control, the category at the centre of the 2025 ghost-project
+          scandal and the one whose footprints 10m imagery can actually resolve. Where a
+          finished project shows no construction signal, it is flagged for review. It is an
+          open-source tool: the same pipeline runs on any country&apos;s infrastructure data.
         </p>
 
         {/* Section index — deep-link anchors for confusion-driven visitors */}
@@ -164,8 +166,14 @@ export default function MethodologyPage() {
                   {
                     label: "No Clear Change",
                     condition: "Below all thresholds",
-                    interp: "Inconclusive: often a span below 10m resolution, not a missing bridge",
+                    interp: "Inconclusive: weak or no signal at 10m resolution",
                     color: "var(--color-text-muted)",
+                  },
+                  {
+                    label: "Flagged for Review",
+                    condition: "Completed + built-up index flat or falling (top of anomaly rank)",
+                    interp: "A candidate: no construction visible where a finished project should show it",
+                    color: "var(--color-ghost)",
                   },
                 ].map((row) => (
                   <tr
@@ -198,32 +206,37 @@ export default function MethodologyPage() {
             </table>
           </div>
           <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
-            On this site a completed bridge with no clear satellite signal is reported as
-            <strong> inconclusive, never flagged as a ghost</strong>. Bridge spans are usually
-            narrow and over water, below what 10m optical imagery can resolve, so the absence of
-            a signal is not evidence the bridge is missing. The open-source tool can flag
-            completed-but-no-change projects for review (configurable confidence threshold,
-            default 0.70); for bridges that capability is deliberately held back in favor of an
-            honest &quot;inconclusive&quot;.
+            One honest caveat up front: as a plain yes/no detector this method over-flags badly.
+            Run as a binary &quot;built or not&quot; test on completed flood-control projects, it
+            flags two-thirds to four-fifths of them, because most flood-control structures
+            (concrete on already-bare riverbanks) produce a weak spectral signal, not because they
+            are all ghosts. So we do not use the raw flag. Instead every assessed project gets a
+            continuous <strong>anomaly score</strong> from how flat or falling its built-up index is,
+            and only the strongest tail (completed projects where the built-up index actually
+            held flat or dropped) is surfaced in red as <strong>flagged for review</strong>.
+            That cut is tuned so the red set is roughly the same share that the government&apos;s own
+            Independent Commission for Infrastructure confirmed as ghost flood-control projects
+            (about one in twenty reviewed). A red marker is a candidate for ground-truth review, never
+            proof: narrow or small structures can be genuinely built yet sit below optical resolution.
           </p>
         </section>
 
         {/* Historical imagery — on-demand Wayback for every bridge */}
         <section id="historical" className="mb-10 scroll-mt-20">
           <h2 className="mb-3 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
-            Historical Imagery for Every Bridge
+            Historical Imagery for Every Project
           </h2>
           <p className="mb-3 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
-            The Sentinel-2 verdict above is computed for 50 curated bridges. Every other bridge on
-            the map &mdash; all 12,558 &mdash; still opens an on-demand before/after view built from
-            the <strong>Esri World Imagery Wayback</strong> archive: high-resolution historical
-            basemap snapshots from 2014 to the present. Pick two dates and drag to compare how a site
-            changed over time.
+            The Sentinel-2 verdict drives the marker colour. Every project on the map also opens an
+            on-demand before/after view built from the <strong>Esri World Imagery Wayback</strong>
+            archive: high-resolution historical basemap snapshots from 2014 to the present. Pick two
+            dates and drag to compare how a site changed over time. For a flagged project, look
+            for whether the structure ever actually appears.
           </p>
           <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
             This view is <strong>imagery only and carries no automated verdict</strong>. The dates
             are when Esri refreshed its basemap, not necessarily when the area was re-photographed,
-            so some locations look unchanged between two dates &mdash; the viewer says so when that
+            so some locations look unchanged between two dates, and the viewer says so when that
             happens. It is a way to look with your own eyes, kept deliberately separate from the
             Sentinel-2 change detection so raw imagery is never mistaken for an accusation.
           </p>
@@ -235,9 +248,11 @@ export default function MethodologyPage() {
             Composite Strategy
           </h2>
           <p className="mb-3 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
-            Rather than a single image, GhostWatch creates <strong>median composites</strong> from
-            all cloud-free Sentinel-2 images within a 90-day window before and after the project
-            period. The median eliminates clouds, shadows, and transient features.
+            Rather than a single image, each site gets a <strong>median composite</strong> of every
+            cloud-free Sentinel-2 scene in a before window (the year ahead of the project&apos;s
+            funding year) and an after window (the most recent two years). The median strips out
+            clouds, shadows, and passing features. Where neither window has a clear scene, the project
+            is left unassessed rather than guessed.
           </p>
           <div
             className="rounded-[5px] px-4 py-4 font-mono text-xs leading-relaxed"
@@ -247,12 +262,12 @@ export default function MethodologyPage() {
               color: "var(--color-text-secondary)",
             }}
           >
-            <div style={{ color: "var(--color-text-muted)" }}># Time windows</div>
-            <div>Before composite: (start_date - 90 days) → start_date</div>
-            <div>After composite:  end_date → (end_date + 90 days)</div>
+            <div style={{ color: "var(--color-text-muted)" }}># Time windows (per project)</div>
+            <div>Before composite: (funding_year − 1)</div>
+            <div>After composite:  latest 2 years (2024–2025)</div>
             <div className="mt-2" style={{ color: "var(--color-text-muted)" }}># Filters</div>
             <div>Cloud cover: &lt; 20% (CLOUDY_PIXEL_PERCENTAGE)</div>
-            <div>Buffer: 500m radius around project coordinates</div>
+            <div>Buffer: 100m radius around project coordinates</div>
             <div>Resolution: 10m (Sentinel-2 native)</div>
           </div>
         </section>
@@ -265,8 +280,8 @@ export default function MethodologyPage() {
           <div className="space-y-3">
             {[
               {
-                title: "Bridges over water",
-                detail: "A new span over a river or coast is a thin line of concrete inside a buffer that is mostly water and banks. Averaged over the area, the built-up signal can stay below threshold even when the bridge was genuinely completed. This is the single biggest reason a real bridge here may show little visible change. Treat such reads as a prompt to look closer, not a finding.",
+                title: "Narrow or water-adjacent structures",
+                detail: "A bridge span over a river, or a flood-control wall along a bank, is a thin line of concrete inside a buffer that is mostly water and bare ground. Averaged over the area, the built-up signal can stay below threshold even when the structure was genuinely completed. This is a common reason a real, finished project shows little visible change, and the main reason most flood-control sites read as weak signal. Treat such reads as a prompt to look closer, not a finding.",
               },
               {
                 title: "Underground infrastructure",

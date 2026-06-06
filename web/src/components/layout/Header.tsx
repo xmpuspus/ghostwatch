@@ -18,7 +18,7 @@ function Wordmark() {
     <Link
       href="/"
       className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
-      aria-label="Tulay Pinoy — home"
+      aria-label="Tulay Pinoy, home"
     >
       {/* registration-cross / graticule tick */}
       <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" className="shrink-0">

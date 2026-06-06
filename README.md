@@ -8,17 +8,17 @@ Satellite verification of public infrastructure: see whether it was built, from 
 
 GhostWatch is an open-source tool. Point it at a government's infrastructure records and it cross-references each project against free Sentinel-2 satellite imagery, computing before/after spectral change to look for visible construction. It ships as a Python pipeline, a FastAPI backend, and a Next.js dashboard you can clone and run locally against the full 248,220-project Philippine DPWH dataset (PHP 6.38 trillion in contracts, 214,747 geolocated sites).
 
-**Live: [tulaypinoy.ph](https://tulaypinoy.ph)** — a curated, fully static, bridges-only build of this tool, deployed on Vercel with no backend. Every one of the Philippines' 12,558 DPWH bridge projects (PHP 382.4 billion), mapped from the public record, plus a Sentinel-2 before/after showcase over 50 real completed bridges and on-demand historical imagery for every bridge from the Esri World Imagery Wayback archive (2014 to today). The Python pipeline runs at build time and bakes real data into static JSON and PNG the site reads directly off the edge. A few months ago this was an offline tool anyone could clone and deploy; this is what deploying it looks like.
+**Live: [tulaypinoy.ph](https://tulaypinoy.ph)** is a fully static build of this tool, deployed on Vercel with no backend, that turns the satellite check into a ghost-project map. It leads with flood control: the category at the centre of the Philippines' 2025 ghost-project investigations, and the footprint 10m imagery can actually resolve. Every completed flood-control project is run through Sentinel-2 change detection. Where a finished project shows no construction signal it is flagged for review (480 flagged, PHP 20.2 billion), shown in red next to the projects where construction is confirmed from space (549) and the wider DPWH record (42,305 projects mapped). Bridges are mapped alongside as context. A flagged project is a candidate for review, never an accusation. The Python pipeline bakes the real record into static JSON the site reads off the edge.
 
 <p align="center">
   <img src="docs/demo/tour.gif" alt="Tulay Pinoy live tour" width="800">
 </p>
 
-<p align="center"><em><a href="https://tulaypinoy.ph">tulaypinoy.ph</a> — 12,558 DPWH bridges mapped from public data, with a real Sentinel-2 before/after showcase and on-demand historical imagery for every bridge.</em></p>
+<p align="center"><em><a href="https://tulaypinoy.ph">tulaypinoy.ph</a>: completed DPWH flood-control projects checked from space, the ones with no construction signal flagged for review in red, with on-demand historical imagery for every project.</em></p>
 
 ### What the satellite actually shows
 
-At 10-meter resolution, free optical satellite reliably picks up construction on large land footprints (interchanges, bypass embankments) but often cannot resolve a narrow bridge span over water: the built-up signal is swamped by a buffer that is mostly water and banks. So the showcase reports three honest states, construction detected, partial change, and no clear change (inconclusive), and never labels a real, completed bridge a "ghost." A satellite read is a prompt for review, not a verdict. Of the 50 bridges checked, 3 show clear construction, 11 show partial change, and 36 fall below what 10-meter imagery can resolve. Beyond those 50, every bridge on the map opens an on-demand historical before/after from the Esri World Imagery Wayback archive (2014 to today) — high-resolution imagery to inspect by eye, deliberately carrying no automated verdict so raw imagery is never mistaken for an accusation.
+At 10-meter resolution, free optical satellite picks up construction on large footprints (cleared ground, new built-up) but cannot resolve thin or small structures. As a plain built-or-not test it over-flags badly: run as a binary check on completed flood-control projects, it flags two-thirds to four-fifths of them, because most flood-control work (concrete on an already-bare riverbank) barely moves the built-up index. So the map does not use that raw flag. Every assessed project gets a continuous anomaly score, and only the strongest tail (completed projects where the built-up index actually held flat or fell) is shown in red as flagged for review: 480 of 21,356 assessed flood-control projects, about 2 percent, a deliberately conservative cut (the government's own Independent Commission for Infrastructure confirmed roughly 5 percent of the flood-control projects it reviewed as ghosts). The opposite tail, 549 projects showing clear new clearing and built-up, is marked construction confirmed; the rest is partial or inconclusive. A flagged project is a prompt for review, not a verdict: many flagged sites were genuinely built but sit below what 10m can resolve, which is why every project also opens an on-demand historical before/after from the Esri World Imagery Wayback archive (2014 to today) to inspect by eye.
 
 ### Screenshots
 
@@ -26,21 +26,21 @@ At 10-meter resolution, free optical satellite reliably picks up construction on
 |:---:|:---:|
 | ![Map view](docs/screenshots/map.png) | ![Dashboard](docs/screenshots/dashboard.png) |
 
-| Satellite Showcase | Methodology |
+| Satellite Case Studies | Methodology |
 |:---:|:---:|
 | ![Verify](docs/screenshots/verify.png) | ![Methodology](docs/screenshots/methodology.png) |
 
-<p align="center"><em>A remote-sensing instrument console: 11,584 geolocated bridges on a satellite basemap, budget and completion analytics, before/after spectral comparison, and the full methodology.</em></p>
+<p align="center"><em>A remote-sensing instrument console: completed DPWH projects on a satellite basemap with flagged candidates in red, ghost-rate and budget analytics, before/after spectral comparison, and the full methodology.</em></p>
 
 ---
 
 ## The Problem
 
-Ghost projects — government contracts reported as complete with no physical evidence of construction — represent a documented accountability gap across public infrastructure programs. Manual field audits cost thousands of dollars per site and realistically cover less than 1% of active contracts. With PHP 6.38 trillion spread across 248,220 DPWH projects and only 11,161 contractors on record, the gap between reported and verifiable completion cannot be closed by inspection alone.
+Ghost projects (government contracts reported as complete with no physical evidence of construction) represent a documented accountability gap across public infrastructure programs. Manual field audits cost thousands of dollars per site and realistically cover less than 1% of active contracts. With PHP 6.38 trillion spread across 248,220 DPWH projects and only 11,161 contractors on record, the gap between reported and verifiable completion cannot be closed by inspection alone.
 
-Sentinel-2 satellite imagery revisits every point on Earth every five days at 10-meter resolution, free of charge. GhostWatch automates what a field auditor does — compare before and after — at the scale of a national infrastructure program.
+Sentinel-2 satellite imagery revisits every point on Earth every five days at 10-meter resolution, free of charge. GhostWatch automates what a field auditor does, comparing before and after, at the scale of a national infrastructure program.
 
-> **Disclaimer:** Verification results are based on automated satellite analysis and may contain errors. A project flagged for review is a statistical indicator that warrants further investigation — it is not a finding of fraud or irregularity. Construction of small structures, underground works, or projects completed outside the satellite acquisition window may not be detectable at 10-meter resolution. All source data is public record. Conclusions about individual projects must not be drawn without independent manual verification.
+> **Disclaimer:** Verification results are based on automated satellite analysis and may contain errors. A project flagged for review is a statistical indicator that warrants further investigation; it is not a finding of fraud or irregularity. Construction of small structures, underground works, or projects completed outside the satellite acquisition window may not be detectable at 10-meter resolution. All source data is public record. Conclusions about individual projects must not be drawn without independent manual verification.
 
 ---
 
@@ -136,25 +136,24 @@ cd web && npm run dev      # UI on :3000
 
 ## Live deployment: tulaypinoy.ph
 
-[tulaypinoy.ph](https://tulaypinoy.ph) is a separate outcome from the local tool above: a curated, **bridges-only, fully static** snapshot served by Vercel with no backend. The Python pipeline runs once at build time and bakes real DPWH + satellite data into static files the Next.js app reads directly.
+[tulaypinoy.ph](https://tulaypinoy.ph) is a separate outcome from the local tool above: a **fully static** snapshot served by Vercel with no backend. The Python pipeline runs once at build time and bakes the real DPWH record plus satellite change-detection into static files the Next.js app reads directly. It leads with **flood control**, the category at the centre of the 2025 ghost-project investigations and the one whose footprints 10m imagery can resolve; bridges are mapped alongside as context.
 
 ```bash
-# 1. Bake the bridges dataset (real DPWH parquet -> static JSON, no GEE needed)
-python3 scripts/bake_bridges.py
-#   -> web/public/data/{overview,charts,bridges,cases}.json  (+ manifest)
+# 1. Classify completed projects against Sentinel-2 (Google Earth Engine).
+#    Batched, per-project before/after windows; writes the change deltas + class.
+GHOSTWATCH_EE_KEY=/path/to/ee-key.json python3 scripts/calibrate_classifier.py \
+    --category "flood control and drainage" --out data/classified/flood_control.csv
 
-# 2. Bake the satellite showcase (Sentinel-2 before/after over 50 real bridges)
-GHOSTWATCH_EE_KEY=/path/to/ee-key.json python3 scripts/bake_satellite.py
-#   -> web/public/data/tiles/<id>/{before,after}_{rgb,ndbi}.png
-#   -> data/showcase/verifications.json   (then re-run bake_bridges to merge)
-python3 scripts/bake_bridges.py
+# 2. Bake the static dataset (real DPWH parquet + classification -> static JSON).
+python3 scripts/bake_projects.py --classification data/classified/flood_control.csv
+#   -> web/public/data/{projects,overview,charts}.json  (+ manifest)
 
-# 3. Build the static export and deploy
+# 3. Build the static export and deploy.
 cd web && npm run build    # output: 'export' -> web/out/
 vercel deploy --prod       # or push to main (git auto-deploy, rootDir=web)
 ```
 
-The frontend ([`web/`](web/)) is the same dashboard as the local tool, switched to `output: 'export'` and reading `/data/*` instead of the API. `web/vercel.json` adds the security headers and edge caching. No mock data is used anywhere — every published number is recomputed from the DPWH parquet, and every satellite read is real Sentinel-2 model output, curated honestly (no real bridge is labeled a ghost). See [`scripts/bake_bridges.py`](scripts/bake_bridges.py) and [`scripts/bake_satellite.py`](scripts/bake_satellite.py).
+The frontend ([`web/`](web/)) is the same dashboard as the local tool, switched to `output: 'export'` and reading `/data/*` instead of the API. `web/vercel.json` adds the security headers and edge caching. No mock data is used anywhere: every published number is recomputed from the DPWH parquet, and every marker comes from real Sentinel-2 change-detection. A flagged project is a candidate for review, never an accusation. See [`scripts/calibrate_classifier.py`](scripts/calibrate_classifier.py) and [`scripts/bake_projects.py`](scripts/bake_projects.py).
 
 ---
 
@@ -594,7 +593,7 @@ All data used by GhostWatch is publicly available. No proprietary or restricted 
 
 ## Disclaimer
 
-Verification results produced by GhostWatch are based on automated analysis of publicly available satellite imagery. Results may contain errors due to cloud cover, satellite acquisition timing, project scale relative to 10-meter resolution, or mismatched coordinate data. A project flagged for review is a statistical indicator that warrants further investigation — it is not a finding of fraud or irregularity. Conclusions about individual projects or contractors must not be drawn without independent manual verification. All source data (DPWH records, Sentinel-2 imagery) is public record.
+Verification results produced by GhostWatch are based on automated analysis of publicly available satellite imagery. Results may contain errors due to cloud cover, satellite acquisition timing, project scale relative to 10-meter resolution, or mismatched coordinate data. A project flagged for review is a statistical indicator that warrants further investigation; it is not a finding of fraud or irregularity. Conclusions about individual projects or contractors must not be drawn without independent manual verification. All source data (DPWH records, Sentinel-2 imagery) is public record.
 
 ---
 

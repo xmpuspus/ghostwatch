@@ -22,13 +22,13 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tulaypinoy.ph"),
-  title: "Tulay Pinoy — Bridges of the Philippines, verified from space",
+  title: "Tulay Pinoy: ghost projects, from space",
   description:
-    "Every DPWH bridge project in the Philippines, mapped from the public record and checked against free Sentinel-2 satellite imagery. Open-source: clone it, point it at any country.",
+    "Completed DPWH projects across the Philippines, mapped from the public record and checked against free Sentinel-2 imagery. Where a finished project shows no construction, it is flagged for review. Open-source: clone it, point it at any country.",
   openGraph: {
-    title: "Tulay Pinoy — Bridges of the Philippines, verified from space",
+    title: "Tulay Pinoy: ghost projects, from space",
     description:
-      "Every DPWH bridge project, mapped from public data and checked against Sentinel-2 satellite imagery.",
+      "Completed DPWH projects mapped from public data and checked against Sentinel-2 imagery. Where a finished project shows no construction, it is flagged for review.",
     url: "https://tulaypinoy.ph",
     siteName: "Tulay Pinoy",
     type: "website",

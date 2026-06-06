@@ -96,11 +96,12 @@ function VerifyContent() {
             className="mt-1 font-display text-lg font-bold leading-tight"
             style={{ color: "var(--color-text-primary)" }}
           >
-            Bridges checked from space
+            Satellite case studies
           </h1>
           <p className="mt-1 text-xs leading-snug" style={{ color: "var(--color-text-muted)" }}>
-            Completed DPWH bridges compared against Sentinel-2 before/after imagery. Pick a case to
-            see its satellite read.
+            Detailed Sentinel-2 before/after reads on completed bridges, where the imagery is clear
+            enough to publish a verdict. The flags on the ghost map come from the same change-detection,
+            run at scale. Pick a case to see its read.
           </p>
         </div>
 

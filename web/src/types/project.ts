@@ -51,6 +51,10 @@ export interface Project {
   verification_status: VerificationStatus;
   satellite_score: number | null;
   has_satellite_image: boolean;
+  ghost_score?: number | null;
+  change_class?: string | null;
+  ndbi_d?: number | null;
+  ndvi_d?: number | null;
 }
 
 export interface VerificationResult {
@@ -83,11 +87,11 @@ export interface RedFlag {
 
 export interface SatelliteOverview {
   total_verified: number;
-  verified_real: number;
-  flagged_for_review: number;
-  partial: number;
-  pending: number;
-  avg_confidence: number;
+  construction_detected?: number;
+  flagged?: number;
+  partial?: number;
+  inconclusive?: number;
+  avg_confidence?: number;
   data_available: boolean;
 }
 
@@ -98,6 +102,8 @@ export interface OverviewStats {
   completion_rate: number;
   ghost_projects: number;
   ghost_rate: number;
+  ghost_value?: number;
+  assessed_count?: number;
   verified_count: number;
   total_contractors: number;
   avg_contract_value: number;

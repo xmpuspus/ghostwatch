@@ -32,8 +32,8 @@ export default function Footer() {
               </span>
             </div>
             <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
-              An open-source tool that checks the public DPWH bridge record against free Sentinel-2
-              satellite imagery. All figures are from the public record; a satellite read is a prompt
+              An open-source tool that checks the public DPWH project record against free Sentinel-2
+              satellite imagery. All figures are from the public record; a flagged project is a prompt
               for review, never proof of wrongdoing.
             </p>
           </div>

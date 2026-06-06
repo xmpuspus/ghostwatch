@@ -92,4 +92,4 @@ export const TILE_LAYERS = {
 };
 
 export const DISCLAIMER =
-  "Satellite reads are automated change-detection on free 10m Sentinel-2 imagery and can be wrong: bridges over water, narrow spans, and structures completed outside the imagery window are common reasons a real bridge shows little visible change. A result is a prompt for review, never proof of wrongdoing. Every case needs ground-truth investigation before any conclusion is drawn. All figures are from the public DPWH record.";
+  "Satellite reads are automated change-detection on free 10m Sentinel-2 imagery and can be wrong: small or narrow structures, projects completed outside the imagery window, and persistent cloud cover are common reasons a genuinely built project shows little visible change. A flagged project is a prompt for review, never proof of wrongdoing. Every case needs ground-truth investigation before any conclusion is drawn. All figures are from the public DPWH record.";

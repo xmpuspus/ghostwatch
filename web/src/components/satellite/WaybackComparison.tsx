@@ -244,7 +244,7 @@ export default function WaybackComparison({ lat, lng, releases, height = 300 }: 
             className="pointer-events-none absolute bottom-3 left-1/2 z-[600] flex max-w-[88%] -translate-x-1/2 items-center gap-1.5 rounded px-2.5 py-1 text-center text-[10px] leading-snug"
             style={{ backgroundColor: "rgba(11,14,15,0.86)", color: "var(--color-partial)" }}
           >
-            Same date on both sides — pick two different dates to compare.
+            Same date on both sides. Pick two different dates to compare.
           </div>
         )}
       </div>

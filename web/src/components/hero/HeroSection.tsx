@@ -98,7 +98,7 @@ export default function HeroSection() {
           animate="show"
           className="instrument-label mb-5"
         >
-          Open source &middot; DPWH bridges &middot; Sentinel-2
+          Open source &middot; DPWH infrastructure &middot; Sentinel-2
         </motion.p>
 
         <motion.h1
@@ -109,7 +109,7 @@ export default function HeroSection() {
           className="font-display text-[15vw] font-extrabold leading-[0.92] tracking-tight sm:text-6xl md:text-7xl lg:text-8xl"
           style={{ color: "var(--color-text-primary)" }}
         >
-          <span className="block">Bridges,</span>
+          <span className="block">Ghost projects,</span>
           <span className="block" style={{ color: "var(--color-accent)" }}>
             from space.
           </span>
@@ -123,10 +123,10 @@ export default function HeroSection() {
           className="mt-7 max-w-xl text-base leading-relaxed md:text-lg"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Every bridge in the Philippine DPWH record, mapped from public data and
-          checked against free Sentinel-2 imagery, to see whether what was reported
-          as built is visible from orbit. Open source: clone it, point it at any
-          country.
+          Completed DPWH projects across the Philippines, mapped from public data and
+          checked against free Sentinel-2 imagery. Where the satellite shows no
+          construction at a finished project, we flag it for review, a prompt to look
+          closer, never proof. Open source: clone it, point it at any country.
         </motion.p>
 
         <motion.div
@@ -138,7 +138,7 @@ export default function HeroSection() {
         >
           <Link href="/map">
             <button className="btn-primary flex w-full items-center justify-center gap-2 sm:w-auto">
-              Explore the bridge map
+              Explore the ghost map
               <ArrowRight size={15} />
             </button>
           </Link>
@@ -157,7 +157,7 @@ export default function HeroSection() {
           style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-border)" }}
         >
           <Ledger
-            label="DPWH Bridges"
+            label="Projects Mapped"
             value={stats?.total_projects ?? 0}
             source="Source: DPWH"
           />
@@ -171,9 +171,10 @@ export default function HeroSection() {
             lead
           />
           <Ledger
-            label="Reported Completed"
-            value={stats?.completed_projects ?? 0}
-            source="By DPWH status"
+            label="Flagged for Review"
+            value={stats?.ghost_projects ?? 0}
+            source="No satellite signal"
+            ghost
           />
           <Ledger
             label="Regions Covered"
@@ -191,18 +192,18 @@ export default function HeroSection() {
         >
           <Step
             n="01"
-            title="Public bridge records"
-            body="Every DPWH bridge contract (location, budget, status, completion date), straight from the public transparency dataset."
+            title="Public project records"
+            body="Every DPWH contract (location, budget, status, completion date), straight from the public transparency dataset."
           />
           <Step
             n="02"
             title="Satellite change detection"
-            body="NDBI, NDVI, and BSI change between before and after Sentinel-2 composites over each bridge site."
+            body="NDBI, NDVI, and BSI change between before and after Sentinel-2 composites over each completed project site."
           />
           <Step
             n="03"
-            title="See what's visible"
-            body="Each checked bridge gets a read: construction detected, partial change, or no clear change at 10m resolution."
+            title="Flag what's missing"
+            body="A completed project with no construction signal at 10m is flagged for review, a prompt to look closer, never proof of wrongdoing."
           />
         </div>
         <p
@@ -224,6 +225,7 @@ function Ledger({
   decimals = 0,
   source,
   lead = false,
+  ghost = false,
 }: {
   label: string;
   value: number;
@@ -232,12 +234,13 @@ function Ledger({
   decimals?: number;
   source: string;
   lead?: boolean;
+  ghost?: boolean;
 }) {
   return (
     <div style={{ backgroundColor: "var(--color-bg)" }} className="px-4 py-5">
       <div
         className={`stat-value ${lead ? "text-3xl md:text-4xl" : "text-2xl md:text-3xl"}`}
-        style={{ color: lead ? "var(--color-accent)" : "var(--color-text-primary)" }}
+        style={{ color: ghost ? "var(--color-ghost)" : lead ? "var(--color-accent)" : "var(--color-text-primary)" }}
       >
         <CountUp end={value} prefix={prefix} suffix={suffix} decimals={decimals} />
       </div>
