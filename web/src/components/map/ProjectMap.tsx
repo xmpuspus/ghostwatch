@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, useMapEvents } from "react-leaflet";
-import type { LatLngBounds } from "leaflet";
+import { MapContainer, TileLayer, CircleMarker, Marker, useMapEvents } from "react-leaflet";
+import L, { type LatLngBounds, type PathOptions } from "leaflet";
 import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert, SatelliteDish, X, Crosshair } from "lucide-react";
 import {
   MAP_CENTER,
@@ -42,34 +42,73 @@ const CATEGORY_FILTERS: { label: string; value: string }[] = [
 // inconclusive + not-assessed backdrop is capped to the current viewport.
 const HIGHLIGHT = new Set(["NOT_VISIBLE", "VERIFIED", "PARTIAL"]);
 const CONTEXT_CAP = 5000;
+const MAX_PINGS = 14; // animated DOM rings only on the largest flagged sites in view
 
-function tierRadius(status: string, amount: number | null): number {
+const RED = VERIFICATION_COLORS.NOT_VISIBLE; // #f0533f
+const GREEN = VERIFICATION_COLORS.VERIFIED; // #3fb950
+const AMBER = VERIFICATION_COLORS.PARTIAL; // #e3b341
+const STEEL = VERIFICATION_COLORS.INCONCLUSIVE; // #7aa6c9
+
+// Detail kicks in once you zoom into a locale: target rings + radar pings appear
+// and markers grow. At country zoom they stay compact so 480 reds don't overlap
+// into solid blobs that over-state a 2.2% rate.
+const DETAIL_ZOOM = 9;
+
+// Markers shrink at country zoom (dense) and grow into full targets up close.
+function zoomScale(zoom: number): number {
+  if (zoom >= 12) return 1.05;
+  if (zoom >= 11) return 1;
+  if (zoom >= 10) return 0.9;
+  if (zoom >= DETAIL_ZOOM) return 0.8;
+  if (zoom >= 8) return 0.7;
+  if (zoom >= 7) return 0.62;
+  return 0.55;
+}
+
+// Marker scale. The red "no construction visible" finding reads largest; amber
+// "partial" is held deliberately small so 6.5k partial dots don't drown the
+// ~480 red and ~550 green verdicts that are the actual story.
+function coreRadius(status: string, amount: number | null, zoom: number): number {
   const a = amount ?? 0;
-  if (status === "NOT_VISIBLE") return a >= 1e9 ? 8 : a >= 1e8 ? 6.5 : 5;
-  if (status === "VERIFIED") return a >= 1e8 ? 6 : 4.5;
-  if (status === "PARTIAL") return a >= 1e8 ? 5 : 4;
-  if (status === "INCONCLUSIVE") return 2.6;
-  return 2;
+  const k = zoomScale(zoom);
+  let base: number;
+  if (status === "NOT_VISIBLE") base = a >= 1e9 ? 9 : a >= 1e8 ? 7 : 5.5;
+  else if (status === "VERIFIED") base = a >= 1e8 ? 6 : 4.5;
+  else if (status === "PARTIAL") base = a >= 1e8 ? 4.5 : 3.5;
+  else if (status === "INCONCLUSIVE") base = 2.6;
+  else base = 2;
+  return Math.max(1.3, base * k);
 }
 
-function tierStyle(status: string) {
-  const c = VERIFICATION_COLORS[status] ?? "#5a6663";
-  if (status === "NOT_VISIBLE")
-    return { color: "#ffd9d2", weight: 1, fillColor: c, fillOpacity: 0.9 };
-  if (status === "VERIFIED") return { color: "transparent", weight: 0, fillColor: c, fillOpacity: 0.92 };
-  if (status === "PARTIAL") return { color: "transparent", weight: 0, fillColor: c, fillOpacity: 0.88 };
-  if (status === "INCONCLUSIVE") return { color: "transparent", weight: 0, fillColor: c, fillOpacity: 0.5 };
-  return { color: "transparent", weight: 0, fillColor: "#5a6663", fillOpacity: 0.4 };
+// A concentric ring sits behind the two lead verdicts — the "acquired target" look.
+function haloRadius(status: string, amount: number | null, zoom: number): number {
+  return coreRadius(status, amount, zoom) + (status === "NOT_VISIBLE" ? 5 : 3.5);
 }
+
+// Filled cores. Light edge on red / dark edge on green+amber for crispness on
+// busy satellite imagery; steel + grey recede into a faint context field.
+const CORE_STYLE: Record<string, PathOptions> = {
+  NOT_VISIBLE: { color: "#ffe2db", weight: 1.1, fillColor: RED, fillOpacity: 0.96 },
+  VERIFIED: { color: "#06181a", weight: 1, fillColor: GREEN, fillOpacity: 0.95 },
+  PARTIAL: { color: "rgba(11,14,15,0.5)", weight: 0.75, fillColor: AMBER, fillOpacity: 0.64 },
+  INCONCLUSIVE: { color: "transparent", weight: 0, fillColor: STEEL, fillOpacity: 0.34 },
+  UNVERIFIED: { color: "transparent", weight: 0, fillColor: "#5a6663", fillOpacity: 0.26 },
+};
+
+// Stroke-only target rings (no fill, non-interactive so the core handles clicks).
+const HALO_STYLE: Record<string, PathOptions> = {
+  NOT_VISIBLE: { color: RED, weight: 1.3, fill: false, opacity: 0.55, interactive: false },
+  VERIFIED: { color: GREEN, weight: 1.1, fill: false, opacity: 0.42, interactive: false },
+};
 
 // Reports the current viewport bounds so the context layer can cull to it.
-function BoundsWatcher({ onChange }: { onChange: (b: LatLngBounds) => void }) {
+function BoundsWatcher({ onChange }: { onChange: (b: LatLngBounds, z: number) => void }) {
   const map = useMapEvents({
-    moveend: () => onChange(map.getBounds()),
-    zoomend: () => onChange(map.getBounds()),
+    moveend: () => onChange(map.getBounds(), map.getZoom()),
+    zoomend: () => onChange(map.getBounds(), map.getZoom()),
   });
   useEffect(() => {
-    onChange(map.getBounds());
+    onChange(map.getBounds(), map.getZoom());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return null;
@@ -87,6 +126,7 @@ export default function ProjectMap() {
   const [waybackReleases, setWaybackReleases] = useState<WaybackRelease[]>([]);
   const [selected, setSelected] = useState<Project | null>(null);
   const [bounds, setBounds] = useState<LatLngBounds | null>(null);
+  const [zoom, setZoom] = useState(MAP_ZOOM);
 
   useEffect(() => {
     setLoading(true);
@@ -158,6 +198,31 @@ export default function ProjectMap() {
     return inView.slice(0, CONTEXT_CAP);
   }, [filtered, bounds]);
 
+  // Lead verdicts split out so they layer back-to-front: amber under green under
+  // red, each with its ring beneath its core.
+  const partial = useMemo(() => highlight.filter((p) => p.verification_status === "PARTIAL"), [highlight]);
+  const verified = useMemo(() => highlight.filter((p) => p.verification_status === "VERIFIED"), [highlight]);
+  const notVisible = useMemo(() => highlight.filter((p) => p.verification_status === "NOT_VISIBLE"), [highlight]);
+
+  // Live radar ping on the biggest flagged sites currently in view — a few moving
+  // rings read as a sensor acquiring targets without animating all ~480 reds.
+  const detailed = zoom >= DETAIL_ZOOM;
+  const redPings = useMemo(() => {
+    if (!detailed) return [];
+    const inView = bounds ? notVisible.filter((p) => bounds.contains([p.lat, p.lng])) : notVisible;
+    return [...inView].sort((a, b) => (b.contract_amount ?? 0) - (a.contract_amount ?? 0)).slice(0, MAX_PINGS);
+  }, [notVisible, bounds, detailed]);
+
+  const pingIcon = useMemo(
+    () =>
+      L.divIcon({
+        className: "gw-ping-wrap",
+        html: `<span class="gw-ping" style="--c:${RED}"></span>`,
+        iconSize: [0, 0],
+      }),
+    [],
+  );
+
   const tile = TILE_LAYERS[mapStyle];
 
   return (
@@ -171,35 +236,85 @@ export default function ProjectMap() {
         preferCanvas={true}
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />
-        <BoundsWatcher onChange={setBounds} />
+        <BoundsWatcher
+          onChange={(b, z) => {
+            setBounds(b);
+            setZoom(z);
+          }}
+        />
 
-        {/* Faint backdrop: inconclusive + not-assessed, culled to viewport */}
-        {context.map((p) => {
-          const s = tierStyle(p.verification_status);
-          return (
-            <CircleMarker
-              key={p.id}
-              center={[p.lat, p.lng]}
-              radius={tierRadius(p.verification_status, p.contract_amount)}
-              pathOptions={s}
-              eventHandlers={{ click: () => setSelected(p) }}
-            />
-          );
-        })}
+        {/* Faint context field: inconclusive + not-assessed, culled to viewport */}
+        {context.map((p) => (
+          <CircleMarker
+            key={p.id}
+            center={[p.lat, p.lng]}
+            radius={coreRadius(p.verification_status, p.contract_amount, zoom)}
+            pathOptions={CORE_STYLE[p.verification_status] ?? CORE_STYLE.UNVERIFIED}
+            eventHandlers={{ click: () => setSelected(p) }}
+          />
+        ))}
 
-        {/* Verdicts: red flagged, green confirmed, amber partial — always on top */}
-        {highlight.map((p) => {
-          const s = tierStyle(p.verification_status);
-          return (
+        {/* Partial — quiet amber cores, held low so the red/green verdicts lead */}
+        {partial.map((p) => (
+          <CircleMarker
+            key={p.id}
+            center={[p.lat, p.lng]}
+            radius={coreRadius("PARTIAL", p.contract_amount, zoom)}
+            pathOptions={CORE_STYLE.PARTIAL}
+            eventHandlers={{ click: () => setSelected(p) }}
+          />
+        ))}
+
+        {/* Construction visible (green): target ring (up close) then crisp core */}
+        {detailed &&
+          verified.map((p) => (
             <CircleMarker
-              key={p.id}
+              key={`gh-${p.id}`}
               center={[p.lat, p.lng]}
-              radius={tierRadius(p.verification_status, p.contract_amount)}
-              pathOptions={s}
-              eventHandlers={{ click: () => setSelected(p) }}
+              radius={haloRadius("VERIFIED", p.contract_amount, zoom)}
+              pathOptions={HALO_STYLE.VERIFIED}
             />
-          );
-        })}
+          ))}
+        {verified.map((p) => (
+          <CircleMarker
+            key={`gc-${p.id}`}
+            center={[p.lat, p.lng]}
+            radius={coreRadius("VERIFIED", p.contract_amount, zoom)}
+            pathOptions={CORE_STYLE.VERIFIED}
+            eventHandlers={{ click: () => setSelected(p) }}
+          />
+        ))}
+
+        {/* No construction visible (red) — the finding: ring (up close) + bright core, on top */}
+        {detailed &&
+          notVisible.map((p) => (
+            <CircleMarker
+              key={`rh-${p.id}`}
+              center={[p.lat, p.lng]}
+              radius={haloRadius("NOT_VISIBLE", p.contract_amount, zoom)}
+              pathOptions={HALO_STYLE.NOT_VISIBLE}
+            />
+          ))}
+        {notVisible.map((p) => (
+          <CircleMarker
+            key={`rc-${p.id}`}
+            center={[p.lat, p.lng]}
+            radius={coreRadius("NOT_VISIBLE", p.contract_amount, zoom)}
+            pathOptions={CORE_STYLE.NOT_VISIBLE}
+            eventHandlers={{ click: () => setSelected(p) }}
+          />
+        ))}
+
+        {/* Live sensor ping on the largest flagged sites in view */}
+        {redPings.map((p) => (
+          <Marker
+            key={`ping-${p.id}`}
+            position={[p.lat, p.lng]}
+            icon={pingIcon}
+            interactive={false}
+            keyboard={false}
+          />
+        ))}
       </MapContainer>
 
       {/* Map title + counts (top-left) */}

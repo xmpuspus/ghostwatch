@@ -296,6 +296,28 @@ input:focus-visible {
   100% { transform: scale(2.8); opacity: 0; }
 }
 
+/* Live radar ping on the largest flagged sites in view (capped count) */
+.leaflet-div-icon.gw-ping-wrap {
+  background: transparent;
+  border: none;
+}
+.gw-ping {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c);
+  opacity: 0;
+  pointer-events: none;
+  animation: gwPing 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gw-ping { animation: none; opacity: 0; }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
