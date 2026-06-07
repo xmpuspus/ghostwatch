@@ -159,7 +159,7 @@ export default function HeroSection() {
         >
           <Ledger
             label="Projects Mapped"
-            value={stats?.total_projects ?? 0}
+            value={stats?.with_coordinates ?? stats?.total_projects ?? 0}
             source="Source: DPWH"
           />
           <Ledger

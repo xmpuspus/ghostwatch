@@ -96,7 +96,7 @@ export default function DashboardPage() {
             className="mt-7 grid grid-cols-2 gap-px overflow-hidden border md:grid-cols-4"
             style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-border)" }}
           >
-            <Stat label="Projects Mapped" value={formatNumber(stats.total_projects ?? 0)} />
+            <Stat label="Projects Mapped" value={formatNumber(stats.with_coordinates ?? stats.total_projects ?? 0)} />
             <Stat label="Total Contract Value" value={formatCompact(stats.total_value ?? 0)} />
             <Stat label="No Construction Visible" value={formatNumber(nvCount)} ghost />
             <Stat label="Value, Not Visible" value={formatCompact(nvValue)} ghost />
