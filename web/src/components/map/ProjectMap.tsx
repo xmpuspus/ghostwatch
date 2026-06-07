@@ -217,7 +217,7 @@ export default function ProjectMap() {
     () =>
       L.divIcon({
         className: "gw-ping-wrap",
-        html: `<span class="gw-ping" style="--c:${RED}"></span>`,
+        html: `<span class="gw-ping-host" style="--c:${RED}"><i class="gw-ping"></i><i class="gw-ping gw-ping-2"></i></span>`,
         iconSize: [0, 0],
       }),
     [],

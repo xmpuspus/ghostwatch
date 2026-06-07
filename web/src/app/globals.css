@@ -296,23 +296,38 @@ input:focus-visible {
   100% { transform: scale(2.8); opacity: 0; }
 }
 
-/* Live radar ping on the largest flagged sites in view (capped count) */
+/* Live radar ping on the largest flagged sites in view (capped count). Thick,
+   bright, double-pulse so it reads as motion above the static target rings. */
 .leaflet-div-icon.gw-ping-wrap {
   background: transparent;
   border: none;
+}
+.gw-ping-host {
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 .gw-ping {
   position: absolute;
   left: 0;
   top: 0;
-  width: 30px;
-  height: 30px;
-  margin: -15px 0 0 -15px;
+  width: 38px;
+  height: 38px;
+  margin: -19px 0 0 -19px;
   border-radius: 50%;
-  border: 1.5px solid var(--c);
+  border: 2.5px solid var(--c);
   opacity: 0;
   pointer-events: none;
-  animation: gwPing 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  animation: gwPing2 3s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+.gw-ping-2 {
+  animation-delay: 1.5s;
+}
+@keyframes gwPing2 {
+  0% { transform: scale(0.4); opacity: 0; }
+  12% { opacity: 0.95; }
+  55% { opacity: 0.32; }
+  100% { transform: scale(3.5); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .gw-ping { animation: none; opacity: 0; }
