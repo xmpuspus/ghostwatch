@@ -21,12 +21,15 @@ export default function CountUp({
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
+    // Never render NaN/Infinity if a stat ever arrives missing (e.g. partial fetch).
+    const target = Number.isFinite(end) ? end : 0;
+
     // Respect reduced-motion: skip the count animation, show the final value.
     if (
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
-      setDisplay(end.toFixed(decimals));
+      setDisplay(target.toFixed(decimals));
       return;
     }
 
@@ -37,7 +40,7 @@ export default function CountUp({
       const progress = Math.min(elapsed / duration, 1);
       // ease-out expo
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      const current = eased * end;
+      const current = eased * target;
       setDisplay(current.toFixed(decimals));
 
       if (progress < 1) {

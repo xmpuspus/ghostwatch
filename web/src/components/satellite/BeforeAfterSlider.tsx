@@ -167,13 +167,13 @@ export default function BeforeAfterSlider({
         className="coord absolute left-3 top-3 z-20 rounded px-2 py-1 text-[10px] uppercase tracking-wider"
         style={{ backgroundColor: "rgba(11,14,15,0.78)", color: "var(--color-text-secondary)" }}
       >
-        Before · {beforeDate}
+        Before{beforeDate ? ` · ${beforeDate}` : ""}
       </div>
       <div
         className="coord absolute right-3 top-3 z-20 rounded px-2 py-1 text-[10px] uppercase tracking-wider"
         style={{ backgroundColor: "rgba(11,14,15,0.78)", color: "var(--color-text-secondary)" }}
       >
-        After · {afterDate}
+        After{afterDate ? ` · ${afterDate}` : ""}
       </div>
 
       {/* Drag hint until first interaction */}

@@ -63,13 +63,27 @@ function EmptyState() {
   );
 }
 
+function LoadError() {
+  return (
+    <div className="flex h-[220px] items-center justify-center" style={{ backgroundColor: "var(--color-bg-secondary)" }}>
+      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+        Couldn&apos;t load this chart. Reload to retry.
+      </p>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<OverviewStats | null>(null);
   const [charts, setCharts] = useState<ChartData | null>(null);
+  const [chartsError, setChartsError] = useState(false);
 
   useEffect(() => {
     api.analytics.overview().then((r) => setStats(r.data)).catch(() => null);
-    api.analytics.charts().then((r) => setCharts(r.data as ChartData)).catch(() => null);
+    api.analytics
+      .charts()
+      .then((r) => setCharts(r.data as ChartData))
+      .catch(() => setChartsError(true));
   }, []);
 
   const nvRegions = (charts?.not_visible_by_region ?? []).slice(0, 14);
@@ -77,6 +91,7 @@ export default function DashboardPage() {
   const nvValue = stats?.not_visible_value ?? 0;
   const assessed = stats?.assessed_count ?? stats?.satellite?.total_verified ?? 0;
   const confirmed = stats?.verified_count ?? 0;
+  const chartFallback = chartsError ? <LoadError /> : <EmptyState />;
 
   return (
     <div className="min-h-screen pt-14" style={{ backgroundColor: "var(--color-bg)" }}>
@@ -114,7 +129,7 @@ export default function DashboardPage() {
           <div className="grid gap-6 lg:grid-cols-3">
             <Panel title="Satellite Observations" subtitle="What the imagery shows across assessed projects">
               {!charts?.tier_dist?.length ? (
-                <EmptyState />
+                chartFallback
               ) : (
                 <>
                   <ResponsiveContainer width="100%" height={210}>
@@ -162,7 +177,7 @@ export default function DashboardPage() {
 
             <Panel className="lg:col-span-2" title="No Construction Visible, by Region" subtitle="Completed projects with no visible construction from space">
               {!nvRegions.length ? (
-                <EmptyState />
+                chartFallback
               ) : (
                 <>
                   <p className="sr-only">
@@ -202,7 +217,7 @@ export default function DashboardPage() {
           {/* Row 2 — not-visible value over time */}
           <Panel title="Value With No Construction Visible, by Funding Year" subtitle="Total funded vs not-visible value, in billions of pesos">
             {!charts?.yearly?.length ? (
-              <EmptyState />
+              chartFallback
             ) : (
               <>
                 <p className="sr-only">
@@ -240,7 +255,7 @@ export default function DashboardPage() {
           {/* Row 3 — status distribution */}
           <Panel title="Project Status" subtitle="Reported status across mapped DPWH projects">
             {!charts?.status_dist?.length ? (
-              <EmptyState />
+              chartFallback
             ) : (
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={charts.status_dist} margin={{ top: 8 }}>

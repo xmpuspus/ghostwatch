@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { MapContainer, TileLayer, CircleMarker, Marker, useMapEvents } from "react-leaflet";
 import L, { type LatLngBounds, type PathOptions } from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert, SatelliteDish, X, Crosshair } from "lucide-react";
 import {
   MAP_CENTER,
@@ -200,7 +201,13 @@ export default function ProjectMap() {
 
   // Lead verdicts split out so they layer back-to-front: amber under green under
   // red, each with its ring beneath its core.
-  const partial = useMemo(() => highlight.filter((p) => p.verification_status === "PARTIAL"), [highlight]);
+  // Partial is context-grade (amber, held small). Cull it to the viewport so
+  // panning a zoomed-in locale doesn't keep all ~6.5k amber cores mounted.
+  const partial = useMemo(() => {
+    const all = highlight.filter((p) => p.verification_status === "PARTIAL");
+    if (!bounds) return all;
+    return all.filter((p) => bounds.contains([p.lat, p.lng]));
+  }, [highlight, bounds]);
   const verified = useMemo(() => highlight.filter((p) => p.verification_status === "VERIFIED"), [highlight]);
   const notVisible = useMemo(() => highlight.filter((p) => p.verification_status === "NOT_VISIBLE"), [highlight]);
 
@@ -533,7 +540,6 @@ function SatelliteModal({
 
 function PopupCard({ project, caseData }: { project: Project; caseData?: VerificationResult }) {
   const vcolor = VERIFICATION_COLORS[project.verification_status] ?? "#768d87";
-  const assessed = project.verification_status !== "UNVERIFIED";
   const flagged = project.verification_status === "NOT_VISIBLE";
   return (
     <div className="w-full" style={{ fontFamily: "var(--font-body-stack)" }}>
@@ -575,7 +581,7 @@ function PopupCard({ project, caseData }: { project: Project; caseData?: Verific
           <Row icon={<Calendar size={12} />} label="Completion" value={project.target_completion} />
         )}
       </div>
-      {assessed && (
+      {caseData && (
         <a
           href={`/verify?id=${project.id}`}
           className="mt-3 block font-mono text-[11px] font-semibold uppercase tracking-wider"

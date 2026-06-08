@@ -45,6 +45,7 @@ function VerifyContent() {
   const [cases, setCases] = useState<VerificationResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [notInShowcase, setNotInShowcase] = useState(false);
   const [classFilter, setClassFilter] = useState<string>("ALL");
   const [minConf, setMinConf] = useState(0);
   const detailRef = useRef<HTMLDivElement>(null);
@@ -54,10 +55,12 @@ function VerifyContent() {
     api.satellite
       .cases()
       .then((res) => {
-        setCases(res.data ?? []);
+        const data = res.data ?? [];
+        setCases(data);
         if (preselectedId) {
-          const idx = res.data.findIndex((c) => c.project_id === preselectedId);
+          const idx = data.findIndex((c) => c.project_id === preselectedId);
           if (idx >= 0) setSelectedIdx(idx);
+          else setNotInShowcase(true);
         }
       })
       .catch(() => setCases([]))
@@ -73,6 +76,7 @@ function VerifyContent() {
   const selected = filtered[selectedIdx] ?? null;
 
   const selectCase = useCallback((idx: number) => {
+    setNotInShowcase(false);
     setSelectedIdx(idx);
     // On mobile the detail sits below the list — bring it into view.
     if (typeof window !== "undefined" && window.innerWidth < 768) {
@@ -231,7 +235,18 @@ function VerifyContent() {
       {/* Detail panel */}
       <div ref={detailRef} className="flex flex-1 flex-col md:overflow-y-auto">
         <AnimatePresence mode="wait">
-          {selected ? (
+          {notInShowcase ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
+              <HelpCircle size={28} style={{ color: "var(--color-text-muted)" }} />
+              <p className="max-w-sm text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                That project isn&apos;t one of the close-read case studies here.
+              </p>
+              <p className="max-w-sm text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+                The map&apos;s presence/absence call for it comes from the same change-detection,
+                run at scale. Pick a case on the left to see how a read looks.
+              </p>
+            </div>
+          ) : selected ? (
             <motion.div
               key={selected.project_id}
               initial={{ opacity: 0 }}
@@ -304,16 +319,8 @@ function VerifyContent() {
                   className="card-elevated flex flex-col items-center justify-center gap-3"
                   style={{ padding: "1.25rem" }}
                 >
-                  <ConfidenceMeter value={Math.round(selected.confidence * 100)} />
+                  <ConfidenceMeter value={Math.round((selected.confidence ?? 0) * 100)} />
                   <span className="instrument-label">Detection confidence</span>
-                  {selected.data_source === "sar_proxy" && (
-                    <span
-                      className="text-center text-[10px]"
-                      style={{ color: "var(--color-text-muted)" }}
-                    >
-                      SAR proxy used: reduced accuracy
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -330,21 +337,9 @@ function VerifyContent() {
                   {selected.district && <MetaField label="District" value={selected.district} />}
                   <MetaField label="Before" value={selected.before_date} mono />
                   <MetaField label="After" value={selected.after_date} mono />
-                  <MetaField
-                    label="NDBI Δ"
-                    value={`${selected.ndbi_change >= 0 ? "+" : ""}${selected.ndbi_change.toFixed(3)}`}
-                    mono
-                  />
-                  <MetaField
-                    label="NDVI Δ"
-                    value={`${selected.ndvi_change >= 0 ? "+" : ""}${selected.ndvi_change.toFixed(3)}`}
-                    mono
-                  />
-                  <MetaField
-                    label="BSI Δ"
-                    value={`${selected.bsi_change >= 0 ? "+" : ""}${selected.bsi_change.toFixed(3)}`}
-                    mono
-                  />
+                  <MetaField label="NDBI Δ" value={fmtDelta(selected.ndbi_change)} mono />
+                  <MetaField label="NDVI Δ" value={fmtDelta(selected.ndvi_change)} mono />
+                  <MetaField label="BSI Δ" value={fmtDelta(selected.bsi_change)} mono />
                 </dl>
               </div>
 
@@ -365,6 +360,11 @@ function VerifyContent() {
       </div>
     </div>
   );
+}
+
+function fmtDelta(v: number | null | undefined): string {
+  const n = typeof v === "number" && Number.isFinite(v) ? v : 0;
+  return `${n >= 0 ? "+" : ""}${n.toFixed(3)}`;
 }
 
 function MetaField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {

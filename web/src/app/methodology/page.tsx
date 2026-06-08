@@ -30,7 +30,6 @@ export default function MethodologyPage() {
             ["historical", "Historical imagery"],
             ["composite", "Composite strategy"],
             ["limitations", "Known limitations"],
-            ["sar", "SAR cloud-gap"],
           ].map(([id, label]) => (
             <a
               key={id}
@@ -207,17 +206,19 @@ export default function MethodologyPage() {
           </div>
           <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
             One honest caveat up front: as a plain yes/no detector this method is far too blunt.
-            Run as a binary &quot;built or not&quot; test on completed flood-control projects, it reads
-            two-thirds to four-fifths of them as absent, because most flood-control structures
-            (concrete on already-bare riverbanks) produce a weak spectral signal, not because the work
-            is missing. So we do not use that raw call. Instead every assessed project gets a
-            continuous <strong>absence score</strong> from how flat or falling its built-up index is,
-            and only the strongest tail (completed projects where the built-up index actually
-            held flat or dropped) is shown in red as <strong>no construction visible</strong>.
-            That cut is deliberately conservative, well below the share the government&apos;s own
-            Independent Commission for Infrastructure reviewed and confirmed as anomalous
-            (about one in twenty). A red marker is a prompt for ground-truth review, never
-            proof: narrow or small structures can be genuinely built yet sit below optical resolution.
+            Run as a binary &quot;built or not&quot; test on completed flood-control projects, our
+            calibration against real Sentinel-2 imagery reads roughly two-thirds to four-fifths of
+            them as absent, because most flood-control structures (concrete on already-bare
+            riverbanks) produce a weak spectral signal, not because the work is missing. So we do not
+            use that raw call. Instead every assessed project gets a continuous{" "}
+            <strong>absence score</strong> from how flat or falling its built-up index is, and only
+            the strongest tail (completed projects where the built-up index actually held flat or
+            dropped) is shown in red as <strong>no construction visible</strong>. That cut is
+            deliberately conservative: at about 2 percent of assessed sites it sits well below the
+            rate the government&apos;s own Independent Commission for Infrastructure found when it
+            reviewed roughly 8,000 flood-control projects and confirmed about one in twenty as
+            anomalous. A red marker is a prompt for ground-truth review, never proof: narrow or small
+            structures can be genuinely built yet sit below optical resolution.
           </p>
         </section>
 
@@ -297,7 +298,7 @@ export default function MethodologyPage() {
               },
               {
                 title: "Cloud-heavy regions",
-                detail: "In tropical regions with 200+ cloudy days/year, SAR proxy may be used. SAR-proxied results carry reduced confidence and are labeled data_source: sar_proxy.",
+                detail: "In tropical regions with 200+ cloudy days a year, a site may have no clear before or after scene in the imagery window. When neither window has a usable composite, the project is left unassessed rather than guessed.",
               },
               {
                 title: "Climate zone calibration",
@@ -318,19 +319,6 @@ export default function MethodologyPage() {
               </div>
             ))}
           </div>
-        </section>
-
-        {/* SAR fallback */}
-        <section id="sar" className="mb-10 scroll-mt-20">
-          <h2 className="mb-3 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
-            SAR Cloud-Gap Filling
-          </h2>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
-            When optical Sentinel-2 imagery is insufficient due to cloud cover, Sentinel-1 SAR
-            radar imagery fills the gap. SAR penetrates clouds and works at night. The VV
-            backscatter channel provides a proxy for NDBI. Results derived from SAR are labeled
-            and carry a confidence reduction of 0.7× to account for the approximation.
-          </p>
         </section>
 
         {/* Disclaimer */}

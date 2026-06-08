@@ -280,7 +280,11 @@ def build_overview(df: pd.DataFrame, classification: dict) -> dict:
         "assessed_count": int(len(classified)),
         "total_contractors": int(df["contractor"].nunique()),
         "avg_contract_value": round(total_value / total, 2) if total else 0.0,
-        "regions_covered": int(df["region"].replace("", pd.NA).nunique()),
+        # Count geographic regions only. "Central Office" is a DPWH HQ bucket, not
+        # one of the 17 Philippine administrative regions, so it is excluded.
+        "regions_covered": int(
+            df["region"].replace("", pd.NA).replace("Central Office", pd.NA).nunique()
+        ),
         "with_coordinates": int(df[["lat", "lng"]].notna().all(axis=1).sum()),
         "data_available": True,
         "satellite": {

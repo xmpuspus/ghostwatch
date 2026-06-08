@@ -106,7 +106,7 @@ export default function HeroSection() {
           variants={fadeUp}
           initial="hidden"
           animate="show"
-          className="font-display text-[15vw] font-extrabold leading-[0.92] tracking-tight sm:text-6xl md:text-7xl lg:text-8xl"
+          className="font-display text-[12vw] font-extrabold leading-[0.92] tracking-tight break-words sm:text-6xl md:text-7xl lg:text-8xl"
           style={{ color: "var(--color-text-primary)" }}
         >
           <span className="block">Construction,</span>

@@ -257,7 +257,7 @@ GhostWatch ships a Next.js 14 frontend with five views, all dark-themed.
 
 ## Satellite Methodology
 
-GhostWatch uses Sentinel-2 Level-2A (surface reflectance) composites via Google Earth Engine. Each composite is the median of all cloud-free acquisitions within a 90-day window, filtered to scenes with less than 20% cloud cover. A 500-meter buffer is applied around each project coordinate before computing band statistics.
+GhostWatch uses Sentinel-2 Level-2A (surface reflectance) composites via Google Earth Engine. Each composite is the median of all cloud-free acquisitions within a 90-day window, filtered to scenes with less than 20% cloud cover. A 500-meter buffer is the library default applied around each project coordinate before computing band statistics; the live tulaypinoy.ph deploy uses a tighter 100-meter buffer.
 
 ### Spectral indices
 
