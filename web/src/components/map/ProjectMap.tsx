@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, Marker, useMapEvents } from "react-leaflet";
-import L, { type LatLngBounds, type PathOptions } from "leaflet";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { MapContainer, TileLayer, CircleMarker, Marker, useMap, useMapEvents } from "react-leaflet";
+import L, { type LatLngBounds, type Map as LeafletMap, type PathOptions } from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert, SatelliteDish, X, Crosshair } from "lucide-react";
+import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert, SatelliteDish, X, Crosshair, Search } from "lucide-react";
 import {
   MAP_CENTER,
   MAP_ZOOM,
@@ -18,19 +18,23 @@ import {
 } from "@/lib/constants";
 import BeforeAfterSlider from "@/components/satellite/BeforeAfterSlider";
 import WaybackComparison, { type WaybackRelease } from "@/components/satellite/WaybackComparison";
+import { STRINGS, useLang, type Lang } from "@/lib/lang";
 import type { Project, VerificationStatus, VerificationResult } from "@/types/project";
 
 type MapStyle = "streets" | "satellite" | "light";
 
 // Tier filter chips. NOT_VISIBLE (red) leads: completed sites with no construction
 // visible from space. It describes the imagery, not the project.
-const TIER_FILTERS: { label: string; value: VerificationStatus | "ALL" }[] = [
-  { label: "All mapped", value: "ALL" },
-  { label: "No construction visible", value: "NOT_VISIBLE" },
-  { label: "Construction visible", value: "VERIFIED" },
-  { label: "Partial signal", value: "PARTIAL" },
-  { label: "Inconclusive", value: "INCONCLUSIVE" },
-];
+function tierFilters(lang: Lang): { label: string; value: VerificationStatus | "ALL" }[] {
+  const t = STRINGS[lang];
+  return [
+    { label: t.tierAll, value: "ALL" },
+    { label: t.tierNotVisible, value: "NOT_VISIBLE" },
+    { label: t.tierVerified, value: "VERIFIED" },
+    { label: t.tierPartial, value: "PARTIAL" },
+    { label: t.tierInconclusive, value: "INCONCLUSIVE" },
+  ];
+}
 
 const CATEGORY_FILTERS: { label: string; value: string }[] = [
   { label: "All", value: "ALL" },
@@ -96,6 +100,12 @@ const CORE_STYLE: Record<string, PathOptions> = {
   UNVERIFIED: { color: "transparent", weight: 0, fillColor: "#5a6663", fillOpacity: 0.26 },
 };
 
+// Stable style callbacks for the imperative layers (module scope so the
+// marker-rebuild effect only fires on data/zoom changes, not re-renders).
+const contextStyle = (p: Project): PathOptions =>
+  CORE_STYLE[p.verification_status] ?? CORE_STYLE.UNVERIFIED;
+const partialStyle = (): PathOptions => CORE_STYLE.PARTIAL;
+
 // Stroke-only target rings (no fill, non-interactive so the core handles clicks).
 const HALO_STYLE: Record<string, PathOptions> = {
   NOT_VISIBLE: { color: RED, weight: 1.3, fill: false, opacity: 0.55, interactive: false },
@@ -115,11 +125,77 @@ function BoundsWatcher({ onChange }: { onChange: (b: LatLngBounds, z: number) =>
   return null;
 }
 
+// Renders a marker set straight through Leaflet's canvas renderer, bypassing
+// React reconciliation. Re-rendering thousands of <CircleMarker> components on
+// every pan/zoom is the map's dominant interaction cost; rebuilding plain
+// L.circleMarkers in a layer group is an order of magnitude cheaper.
+function ImperativeMarkers({
+  points,
+  zoom,
+  styleFor,
+  onSelect,
+}: {
+  points: Project[];
+  zoom: number;
+  styleFor: (p: Project) => PathOptions;
+  onSelect: (p: Project) => void;
+}) {
+  const map = useMap();
+  const groupRef = useRef<L.LayerGroup | null>(null);
+
+  useEffect(() => {
+    const group = L.layerGroup();
+    group.addTo(map);
+    groupRef.current = group;
+    return () => {
+      group.remove();
+      groupRef.current = null;
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    group.clearLayers();
+    for (const p of points) {
+      const marker = L.circleMarker([p.lat, p.lng], {
+        radius: coreRadius(p.verification_status, p.contract_amount, zoom),
+        ...styleFor(p),
+      });
+      marker.on("click", () => onSelect(p));
+      group.addLayer(marker);
+    }
+  }, [points, zoom, styleFor, onSelect]);
+
+  return null;
+}
+
+// Even-stride sample so the cap keeps geographic spread instead of whatever
+// order the bake emitted (plain slice() biases the cap to the first regions).
+function fairCap(points: Project[], cap: number): Project[] {
+  if (points.length <= cap) return points;
+  const stride = points.length / cap;
+  const out: Project[] = [];
+  for (let i = 0; i < cap; i++) out.push(points[Math.floor(i * stride)]);
+  return out;
+}
+
+function featuresToProjects(resp: {
+  data?: { features?: { properties: Project; geometry: { coordinates: [number, number] } }[] };
+}): Project[] {
+  return (resp?.data?.features ?? []).map((f) => ({
+    ...f.properties,
+    lat: f.geometry.coordinates[1],
+    lng: f.geometry.coordinates[0],
+  }));
+}
+
 export default function ProjectMap() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [totalMatching, setTotalMatching] = useState(0);
+  const [highlightProjects, setHighlightProjects] = useState<Project[]>([]);
+  const [contextProjects, setContextProjects] = useState<Project[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [contextLoading, setContextLoading] = useState(true);
   const [mapStyle, setMapStyle] = useState<MapStyle>("satellite");
   const [tier, setTier] = useState<VerificationStatus | "ALL">("ALL");
   const [category, setCategory] = useState<string>("ALL");
@@ -128,26 +204,30 @@ export default function ProjectMap() {
   const [selected, setSelected] = useState<Project | null>(null);
   const [bounds, setBounds] = useState<LatLngBounds | null>(null);
   const [zoom, setZoom] = useState(MAP_ZOOM);
+  const [query, setQuery] = useState("");
+  const mapRef = useRef<LeafletMap | null>(null);
+  const deepLinkDone = useRef(false);
+  const { lang } = useLang();
+  const t = STRINGS[lang];
 
   useEffect(() => {
     setLoading(true);
-    fetch("/data/projects.json")
+    // The verdict tiers (red/green/amber, ~7.5k features) paint first; the 5x
+    // larger context backdrop streams in behind them, off the critical path.
+    fetch("/data/highlights.json")
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((resp) => {
-        const features = resp?.data?.features ?? [];
-        setTotalMatching(resp?.meta?.total_matching ?? features.length);
-        setProjects(
-          features.map(
-            (f: { properties: Project; geometry: { coordinates: [number, number] } }) => ({
-              ...f.properties,
-              lat: f.geometry.coordinates[1],
-              lng: f.geometry.coordinates[0],
-            }),
-          ),
-        );
+        setHighlightProjects(featuresToProjects(resp));
+        setLoading(false);
+        return fetch("/data/context.json");
       })
-      .catch(() => setLoadError(true))
-      .finally(() => setLoading(false));
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((resp) => setContextProjects(featuresToProjects(resp)))
+      .catch(() => {
+        setLoadError(true);
+        setLoading(false);
+      })
+      .finally(() => setContextLoading(false));
 
     fetch("/data/cases.json")
       .then((r) => (r.ok ? r.json() : Promise.reject()))
@@ -159,6 +239,50 @@ export default function ProjectMap() {
       .then((resp) => setWaybackReleases(resp?.releases ?? []))
       .catch(() => setWaybackReleases([]));
   }, []);
+
+  const projects = useMemo(
+    () => [...highlightProjects, ...contextProjects],
+    [highlightProjects, contextProjects],
+  );
+
+  const openProject = useCallback((p: Project, fly = false) => {
+    setSelected(p);
+    if (fly && mapRef.current) {
+      mapRef.current.flyTo([p.lat, p.lng], Math.max(mapRef.current.getZoom(), 14), {
+        duration: 1.2,
+      });
+    }
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("id", p.id);
+      window.history.replaceState(null, "", url);
+    }
+  }, []);
+
+  const closeProject = useCallback(() => {
+    setSelected(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("id");
+      window.history.replaceState(null, "", url);
+    }
+  }, []);
+
+  // /map?id=<contractId> deep-links any mapped project: open its modal and fly
+  // to it once the dataset containing it has loaded.
+  useEffect(() => {
+    if (deepLinkDone.current || typeof window === "undefined") return;
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (!id) {
+      deepLinkDone.current = true;
+      return;
+    }
+    const p = projects.find((proj) => proj.id === id);
+    if (p) {
+      deepLinkDone.current = true;
+      openProject(p, true);
+    }
+  }, [projects, openProject]);
 
   const caseLookup = useMemo(() => {
     const m = new Map<string, VerificationResult>();
@@ -194,10 +318,30 @@ export default function ProjectMap() {
   const highlight = useMemo(() => filtered.filter((p) => HIGHLIGHT.has(p.verification_status)), [filtered]);
   const context = useMemo(() => {
     const ctx = filtered.filter((p) => !HIGHLIGHT.has(p.verification_status));
-    if (!bounds) return ctx.slice(0, CONTEXT_CAP);
+    if (!bounds) return fairCap(ctx, CONTEXT_CAP);
     const inView = ctx.filter((p) => bounds.contains([p.lat, p.lng]));
-    return inView.slice(0, CONTEXT_CAP);
+    return fairCap(inView, CONTEXT_CAP);
   }, [filtered, bounds]);
+
+  // Search across every loaded project by title, contractor, location, or id.
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    const out: Project[] = [];
+    for (const p of projects) {
+      if (
+        p.title.toLowerCase().includes(q) ||
+        p.contractor.toLowerCase().includes(q) ||
+        p.region.toLowerCase().includes(q) ||
+        p.district.toLowerCase().includes(q) ||
+        p.id.toLowerCase().includes(q)
+      ) {
+        out.push(p);
+        if (out.length >= 8) break;
+      }
+    }
+    return out;
+  }, [projects, query]);
 
   // Lead verdicts split out so they layer back-to-front: amber under green under
   // red, each with its ring beneath its core.
@@ -241,6 +385,13 @@ export default function ProjectMap() {
         className="h-full w-full"
         zoomControl={false}
         preferCanvas={true}
+        ref={(m) => {
+          mapRef.current = m;
+          // Exposed for the demo recorder and browser E2E tests.
+          if (typeof window !== "undefined") {
+            (window as unknown as { __gwmap?: LeafletMap | null }).__gwmap = m;
+          }
+        }}
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />
         <BoundsWatcher
@@ -250,27 +401,22 @@ export default function ProjectMap() {
           }}
         />
 
-        {/* Faint context field: inconclusive + not-assessed, culled to viewport */}
-        {context.map((p) => (
-          <CircleMarker
-            key={p.id}
-            center={[p.lat, p.lng]}
-            radius={coreRadius(p.verification_status, p.contract_amount, zoom)}
-            pathOptions={CORE_STYLE[p.verification_status] ?? CORE_STYLE.UNVERIFIED}
-            eventHandlers={{ click: () => setSelected(p) }}
-          />
-        ))}
+        {/* Faint context field: inconclusive + not-assessed, culled to viewport.
+            Rendered imperatively — thousands of dots bypass React entirely. */}
+        <ImperativeMarkers
+          points={context}
+          zoom={zoom}
+          styleFor={contextStyle}
+          onSelect={openProject}
+        />
 
         {/* Partial — quiet amber cores, held low so the red/green verdicts lead */}
-        {partial.map((p) => (
-          <CircleMarker
-            key={p.id}
-            center={[p.lat, p.lng]}
-            radius={coreRadius("PARTIAL", p.contract_amount, zoom)}
-            pathOptions={CORE_STYLE.PARTIAL}
-            eventHandlers={{ click: () => setSelected(p) }}
-          />
-        ))}
+        <ImperativeMarkers
+          points={partial}
+          zoom={zoom}
+          styleFor={partialStyle}
+          onSelect={openProject}
+        />
 
         {/* Construction visible (green): target ring (up close) then crisp core */}
         {detailed &&
@@ -288,7 +434,7 @@ export default function ProjectMap() {
             center={[p.lat, p.lng]}
             radius={coreRadius("VERIFIED", p.contract_amount, zoom)}
             pathOptions={CORE_STYLE.VERIFIED}
-            eventHandlers={{ click: () => setSelected(p) }}
+            eventHandlers={{ click: () => openProject(p) }}
           />
         ))}
 
@@ -308,7 +454,7 @@ export default function ProjectMap() {
             center={[p.lat, p.lng]}
             radius={coreRadius("NOT_VISIBLE", p.contract_amount, zoom)}
             pathOptions={CORE_STYLE.NOT_VISIBLE}
-            eventHandlers={{ click: () => setSelected(p) }}
+            eventHandlers={{ click: () => openProject(p) }}
           />
         ))}
 
@@ -329,16 +475,73 @@ export default function ProjectMap() {
         className="absolute left-4 top-4 z-[1000] max-h-[calc(100%-2rem)] overflow-y-auto rounded p-3"
         style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
       >
-        <p className="instrument-label">Construction from space · Philippines</p>
+        <p className="instrument-label">{t.mapPanelTitle}</p>
         <p className="stat-value mt-1 text-lg" style={{ color: "var(--color-text-primary)" }}>
           {formatNumber(counts.NOT_VISIBLE ?? 0)}
-          <span className="ml-1.5 text-[11px] font-normal" style={{ color: "var(--color-ghost)" }}>
-            with no construction visible
+          <span className="ml-1.5 text-[11px] font-normal" style={{ color: "var(--color-absence)" }}>
+            {t.mapWithNoConstruction}
           </span>
         </p>
         <p className="mt-0.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-          {formatPeso(flaggedValue)} across {formatNumber(byCategory.length)} mapped projects
+          {t.mapAcross(formatPeso(flaggedValue), formatNumber(byCategory.length))}
         </p>
+
+        {/* Search across every mapped project */}
+        <div className="relative mt-3">
+          <Search
+            size={12}
+            className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2"
+            style={{ color: "var(--color-text-muted)" }}
+          />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={contextLoading ? t.searchLoading : t.searchPlaceholder}
+            aria-label="Search projects"
+            className="w-full rounded py-1.5 pl-7 pr-2 text-[11px] outline-none"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-text-primary)",
+            }}
+          />
+          {results.length > 0 && (
+            <ul
+              className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded"
+              style={{
+                backgroundColor: "var(--glass-bg-elevated)",
+                border: "1px solid var(--color-border-strong)",
+              }}
+            >
+              {results.map((p) => (
+                <li key={p.id}>
+                  <button
+                    onClick={() => {
+                      setQuery("");
+                      openProject(p, true);
+                    }}
+                    className="flex w-full items-start gap-2 px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                  >
+                    <span
+                      className="mt-1 h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: VERIFICATION_COLORS[p.verification_status] ?? "#768d87" }}
+                    />
+                    <span>
+                      <span className="block leading-snug" style={{ color: "var(--color-text-primary)" }}>
+                        {p.title.length > 70 ? `${p.title.slice(0, 70)}…` : p.title}
+                      </span>
+                      <span style={{ color: "var(--color-text-muted)" }}>
+                        {p.district ? `${p.district}, ` : ""}
+                        {p.region}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         {/* Category toggle */}
         <div className="mt-3 flex gap-1">
@@ -361,7 +564,7 @@ export default function ProjectMap() {
 
         {/* Tier chips with counts */}
         <div className="mt-2 flex flex-col gap-1">
-          {TIER_FILTERS.map((opt) => {
+          {tierFilters(lang).map((opt) => {
             const active = tier === opt.value;
             const swatch =
               opt.value === "ALL" ? "var(--color-accent)" : VERIFICATION_COLORS[opt.value] ?? "#768d87";
@@ -397,9 +600,7 @@ export default function ProjectMap() {
           className="mt-3 max-w-[210px] border-t pt-2 text-[10px] leading-snug"
           style={{ color: "var(--color-text-muted)", borderColor: "var(--color-border)" }}
         >
-          Red marks completed projects where 10m satellite shows no visible construction. A prompt
-          to look, not proof: many were genuinely built but sit below clean optical detection.
-          Figures from the public DPWH record.
+          {t.mapPanelNote}
         </p>
       </div>
 
@@ -439,12 +640,24 @@ export default function ProjectMap() {
         </div>
       )}
 
+      {!loading && !loadError && contextLoading && (
+        <div
+          className="absolute inset-x-0 bottom-24 z-[1000] mx-auto flex w-fit items-center gap-2 rounded px-3 py-1.5"
+          style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
+        >
+          <Loader2 size={11} className="animate-spin" style={{ color: "var(--color-text-muted)" }} />
+          <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+            Loading the full project backdrop…
+          </span>
+        </div>
+      )}
+
       {!loading && loadError && (
         <div
           className="absolute inset-x-0 bottom-24 z-[1000] mx-auto flex w-fit items-center gap-2 rounded px-4 py-2.5"
-          style={{ backgroundColor: "rgba(240,83,63,0.12)", border: "1px solid var(--color-ghost)" }}
+          style={{ backgroundColor: "rgba(240,83,63,0.12)", border: "1px solid var(--color-absence)" }}
         >
-          <TriangleAlert size={14} style={{ color: "var(--color-ghost)" }} />
+          <TriangleAlert size={14} style={{ color: "var(--color-absence)" }} />
           <span className="text-[12px]" style={{ color: "var(--color-text-primary)" }}>
             Could not load project data. Reload to retry.
           </span>
@@ -456,7 +669,7 @@ export default function ProjectMap() {
           project={selected}
           caseData={caseLookup.get(selected.id)}
           waybackReleases={waybackReleases}
-          onClose={() => setSelected(null)}
+          onClose={closeProject}
         />
       )}
     </div>
@@ -495,7 +708,7 @@ function SatelliteModal({
         className="relative max-h-[92vh] w-full max-w-[460px] overflow-y-auto rounded"
         style={{
           backgroundColor: "var(--glass-bg-elevated)",
-          border: flagged ? "1px solid var(--color-ghost)" : "1px solid var(--color-border-strong)",
+          border: flagged ? "1px solid var(--color-absence)" : "1px solid var(--color-border-strong)",
           boxShadow: "var(--glass-shadow-elevated)",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -541,6 +754,8 @@ function SatelliteModal({
 function PopupCard({ project, caseData }: { project: Project; caseData?: VerificationResult }) {
   const vcolor = VERIFICATION_COLORS[project.verification_status] ?? "#768d87";
   const flagged = project.verification_status === "NOT_VISIBLE";
+  const { lang } = useLang();
+  const t = STRINGS[lang];
   return (
     <div className="w-full" style={{ fontFamily: "var(--font-body-stack)" }}>
       <h3 className="mb-2 pr-6 text-sm font-semibold leading-tight" style={{ color: "var(--color-text-primary)" }}>
@@ -561,20 +776,25 @@ function PopupCard({ project, caseData }: { project: Project; caseData?: Verific
           className="mb-3 rounded p-2.5 text-[11px] leading-snug"
           style={{ backgroundColor: "rgba(240,83,63,0.1)", border: "1px solid rgba(240,83,63,0.3)", color: "var(--color-text-secondary)" }}
         >
-          <span className="flex items-center gap-1.5 font-semibold" style={{ color: "var(--color-ghost)" }}>
-            <Crosshair size={12} /> No construction visible
+          <span className="flex items-center gap-1.5 font-semibold" style={{ color: "var(--color-absence)" }}>
+            <Crosshair size={12} /> {t.modalFlagTitle}
           </span>
           <p className="mt-1">
-            Reported complete, but 10m Sentinel-2 shows no new built-up here
-            {typeof project.ndbi_d === "number" ? ` (built-up index change ${project.ndbi_d >= 0 ? "+" : ""}${project.ndbi_d.toFixed(3)})` : ""}.
-            That is a prompt to look closer, not proof the project is missing: narrow or small
-            structures can be genuinely built yet sit below optical resolution.
+            {t.modalFlagBody(
+              typeof project.ndbi_d === "number"
+                ? ` (NDBI ${project.ndbi_d >= 0 ? "+" : ""}${project.ndbi_d.toFixed(3)})`
+                : "",
+            )}
           </p>
         </div>
       )}
 
       <div className="space-y-1.5">
-        <Row icon={<Banknote size={12} />} label="Contract" value={formatPeso(project.contract_amount)} />
+        <Row
+          icon={<Banknote size={12} />}
+          label="Contract"
+          value={project.contract_amount != null ? formatPeso(project.contract_amount) : "Not in record"}
+        />
         <Row icon={<Building2 size={12} />} label="Contractor" value={project.contractor} />
         <Row icon={<MapPin size={12} />} label="Location" value={`${project.district}, ${project.region}`} />
         {project.target_completion && (

@@ -103,10 +103,12 @@ def test_ghost_completed_no_change_high_confidence():
     assert reason == "completed_no_satellite_change"
 
 
-def test_ghost_completed_no_change_low_confidence():
+def test_not_ghost_completed_no_change_low_confidence():
+    # Below the confidence threshold the flag must NOT fire — the documented
+    # contract is completed + NO_CHANGE + confidence >= threshold.
     flagged, reason = is_ghost_project("completed", ChangeClass.NO_CHANGE, confidence=0.50)
-    assert flagged is True
-    assert reason == "completed_low_confidence_no_change"
+    assert flagged is False
+    assert reason == "low_confidence_no_change"
 
 
 def test_not_ghost_ongoing_no_change():
@@ -151,13 +153,19 @@ def test_not_ghost_insufficient_data():
 
 
 def test_ghost_custom_threshold():
-    # Raise threshold so 0.75 confidence is now below it
+    # Raise threshold so 0.75 confidence is now below it — not flagged
     flagged, reason = is_ghost_project(
         "completed", ChangeClass.NO_CHANGE, confidence=0.75, threshold=0.80
     )
-    # Still flagged but as low-confidence variant since 0.75 < 0.80
+    assert flagged is False
+    assert reason == "low_confidence_no_change"
+
+    # The same confidence above the threshold flags
+    flagged, reason = is_ghost_project(
+        "completed", ChangeClass.NO_CHANGE, confidence=0.75, threshold=0.70
+    )
     assert flagged is True
-    assert reason == "completed_low_confidence_no_change"
+    assert reason == "completed_no_satellite_change"
 
 
 def test_not_ghost_non_completed_statuses():

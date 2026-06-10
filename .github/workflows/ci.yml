@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[web,dev]"
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check ghostwatch api tests scripts
+      - name: Tests
+        run: python3 -m pytest tests/ -q
+
+  data:
+    name: Baked data gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate baked dataset
+        # Push to main auto-deploys tulaypinoy.ph — this gate stops a garbage
+        # bake (empty tiers, stale manifest hashes, schema drift) from shipping.
+        run: python3 scripts/validate_data.py
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Build (static export)
+        run: npm run build

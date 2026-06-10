@@ -75,11 +75,12 @@ function LoadError() {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<OverviewStats | null>(null);
+  const [statsError, setStatsError] = useState(false);
   const [charts, setCharts] = useState<ChartData | null>(null);
   const [chartsError, setChartsError] = useState(false);
 
   useEffect(() => {
-    api.analytics.overview().then((r) => setStats(r.data)).catch(() => null);
+    api.analytics.overview().then((r) => setStats(r.data)).catch(() => setStatsError(true));
     api.analytics
       .charts()
       .then((r) => setCharts(r.data as ChartData))
@@ -106,6 +107,19 @@ export default function DashboardPage() {
         </p>
 
         {/* Stat ledger */}
+        {statsError && (
+          <div
+            className="mt-7 rounded px-4 py-3 text-[12px]"
+            style={{
+              backgroundColor: "rgba(240,83,63,0.1)",
+              border: "1px solid rgba(240,83,63,0.35)",
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            The headline figures failed to load. Reload to retry; the numbers below each chart
+            come from a separate file and may still be current.
+          </div>
+        )}
         {stats && (
           <div
             className="mt-7 grid grid-cols-2 gap-px overflow-hidden border md:grid-cols-4"
@@ -199,14 +213,14 @@ export default function DashboardPage() {
                             <Tip
                               label={payload[0].payload.region}
                               rows={[
-                                { name: "Not visible", value: formatNumber(payload[0].payload.count), color: "var(--color-ghost)" },
+                                { name: "Not visible", value: formatNumber(payload[0].payload.count), color: "var(--color-absence)" },
                                 { name: "Value", value: formatCompact(payload[0].payload.value) },
                               ]}
                             />
                           ) : null
                         }
                       />
-                      <Bar dataKey="count" radius={[0, 3, 3, 0]} fill="var(--color-ghost)" fillOpacity={0.88} />
+                      <Bar dataKey="count" radius={[0, 3, 3, 0]} fill="var(--color-absence)" fillOpacity={0.88} />
                     </BarChart>
                   </ResponsiveContainer>
                 </>
@@ -245,7 +259,7 @@ export default function DashboardPage() {
                     />
                     <Legend wrapperStyle={{ fontSize: 11, fontFamily: "var(--font-mono-stack)" }} />
                     <Line type="monotone" dataKey="value" name="Funded" stroke="var(--color-accent)" strokeWidth={2} dot={{ r: 2.5, fill: "var(--color-accent)" }} />
-                    <Line type="monotone" dataKey="not_visible" name="Not visible" stroke="var(--color-ghost)" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 2.5, fill: "var(--color-ghost)" }} />
+                    <Line type="monotone" dataKey="not_visible" name="Not visible" stroke="var(--color-absence)" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 2.5, fill: "var(--color-absence)" }} />
                   </LineChart>
                 </ResponsiveContainer>
               </>
@@ -293,7 +307,7 @@ export default function DashboardPage() {
 function Stat({ label, value, ghost }: { label: string; value: string; ghost?: boolean }) {
   return (
     <div style={{ backgroundColor: "var(--color-bg)" }} className="px-4 py-5">
-      <div className="stat-value text-xl md:text-2xl" style={{ color: ghost ? "var(--color-ghost)" : "var(--color-text-primary)" }}>
+      <div className="stat-value text-xl md:text-2xl" style={{ color: ghost ? "var(--color-absence)" : "var(--color-text-primary)" }}>
         {value}
       </div>
       <p className="instrument-label mt-2">{label}</p>

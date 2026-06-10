@@ -108,7 +108,10 @@ def is_ghost_project(
     if classification == ChangeClass.NO_CHANGE:
         if confidence >= threshold:
             return True, "completed_no_satellite_change"
-        return True, "completed_low_confidence_no_change"
+        # Below the confidence threshold the no-change reading is too weak to
+        # act on — do not flag. This keeps the flag conservative, matching the
+        # documented contract (completed + NO_CHANGE + confidence >= threshold).
+        return False, "low_confidence_no_change"
 
     if classification == ChangeClass.INSUFFICIENT_DATA:
         return False, "insufficient_satellite_data"

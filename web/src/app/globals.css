@@ -32,7 +32,7 @@
 
   /* Semantic data colors (distinct from the teal accent) */
   --color-verified: #3fb950;
-  --color-ghost: #f0533f;
+  --color-absence: #f0533f;
   --color-partial: #e3b341;
   --color-pending: #768d87;
   --color-inconclusive: #7aa6c9;
@@ -212,7 +212,7 @@ input:focus-visible {
 }
 
 .badge-verified { color: var(--color-verified); }
-.badge-ghost { color: var(--color-ghost); }
+.badge-absence { color: var(--color-absence); }
 .badge-partial { color: var(--color-partial); }
 .badge-pending { color: var(--color-pending); }
 

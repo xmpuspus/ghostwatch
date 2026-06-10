@@ -8,8 +8,9 @@ services:
     volumes:
       - ./data:/app/data
     environment:
-      - CORS_ORIGINS=http://localhost:3000
-      - DATA_DIR=/app/data
+      # api/config.py reads GHOSTWATCH_-prefixed vars
+      - GHOSTWATCH_CORS_ORIGINS=http://localhost:3000
+      - GHOSTWATCH_DATA_DIR=/app/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -21,9 +22,8 @@ services:
       context: ./web
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://api:8000
+      # static export served by nginx on 80 inside the container
+      - "3000:80"
     depends_on:
       api:
         condition: service_healthy

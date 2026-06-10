@@ -59,9 +59,9 @@ CATEGORY_TO_TYPE = {
 # Absence-score model (see run-notes.md). Higher score = built-up did NOT appear
 # where a completed project should have produced it. Centered so the flagship
 # flood-control NDBI-delta distribution puts the most-negative tail near score 1.
-ABSENCE_CENTER = 0.06   # NDBI delta at which score crosses zero
-ABSENCE_SPAN = 0.16     # delta range mapped to [0,1]
-ABSENCE_CUT = 0.62      # score >= cut AND no_change => red "no construction visible"
+ABSENCE_CENTER = 0.06  # NDBI delta at which score crosses zero
+ABSENCE_SPAN = 0.16  # delta range mapped to [0,1]
+ABSENCE_CUT = 0.62  # score >= cut AND no_change => red "no construction visible"
 
 DISCLAIMER = (
     "Markers describe what automated change-detection on free 10m Sentinel-2 imagery "
@@ -81,20 +81,32 @@ _STATUS_MAP = {
     "not_yet_started": "NOT_YET_STARTED",
 }
 _STATUS_COLORS = {
-    "COMPLETED": "#3fb950", "ONGOING": "#2dd4bf", "FOR_PROCUREMENT": "#8b94f0",
-    "TERMINATED": "#f0533f", "NOT_YET_STARTED": "#768d87",
+    "COMPLETED": "#3fb950",
+    "ONGOING": "#2dd4bf",
+    "FOR_PROCUREMENT": "#8b94f0",
+    "TERMINATED": "#f0533f",
+    "NOT_YET_STARTED": "#768d87",
 }
 _STATUS_LABELS = {
-    "COMPLETED": "Completed", "ONGOING": "On-going", "FOR_PROCUREMENT": "For procurement",
-    "TERMINATED": "Terminated", "NOT_YET_STARTED": "Not yet started",
+    "COMPLETED": "Completed",
+    "ONGOING": "On-going",
+    "FOR_PROCUREMENT": "For procurement",
+    "TERMINATED": "Terminated",
+    "NOT_YET_STARTED": "Not yet started",
 }
 _TIER_LABELS = {
-    "VERIFIED": "Construction visible", "NOT_VISIBLE": "No construction visible",
-    "PARTIAL": "Partial signal", "INCONCLUSIVE": "Inconclusive", "UNVERIFIED": "Not assessed",
+    "VERIFIED": "Construction visible",
+    "NOT_VISIBLE": "No construction visible",
+    "PARTIAL": "Partial signal",
+    "INCONCLUSIVE": "Inconclusive",
+    "UNVERIFIED": "Not assessed",
 }
 _TIER_COLORS = {
-    "VERIFIED": "#3fb950", "NOT_VISIBLE": "#f0533f", "PARTIAL": "#e3b341",
-    "INCONCLUSIVE": "#7aa6c9", "UNVERIFIED": "#5a6663",
+    "VERIFIED": "#3fb950",
+    "NOT_VISIBLE": "#f0533f",
+    "PARTIAL": "#e3b341",
+    "INCONCLUSIVE": "#7aa6c9",
+    "UNVERIFIED": "#5a6663",
 }
 
 
@@ -136,7 +148,9 @@ def absence_score(ndbi_d: float | None) -> float:
     return round(clamp((ABSENCE_CENTER - ndbi_d) / ABSENCE_SPAN), 3)
 
 
-def tier_for(status: str, change_class: str | None, ndbi_d: float | None) -> tuple[str, float | None]:
+def tier_for(
+    status: str, change_class: str | None, ndbi_d: float | None
+) -> tuple[str, float | None]:
     """Map a project to a marker tier + absence_score.
 
     Only completed, assessable projects can read as "no construction visible".
@@ -159,8 +173,10 @@ def tier_for(status: str, change_class: str | None, ndbi_d: float | None) -> tup
 
 
 def load_classification(path: Path | None) -> dict[str, dict]:
-    if not path or not path.exists():
+    if not path:
         return {}
+    if not path.exists():
+        raise SystemExit(f"Classification CSV not found: {path}")
     df = pd.read_csv(path, dtype={"contractId": str})
     out: dict[str, dict] = {}
     for r in df.itertuples():
@@ -226,32 +242,43 @@ def envelope(data, meta=None, disclaimer=True) -> dict:
     return out
 
 
+# Tiers that always render on the map (the product) vs. the faint backdrop.
+# Split into separate files so the browser paints the verdicts in well under a
+# second and parses the 5x-larger context field off the critical path.
+HIGHLIGHT_TIERS = {"NOT_VISIBLE", "VERIFIED", "PARTIAL"}
+
+
 def build_geojson(df: pd.DataFrame) -> dict:
     geo = df.dropna(subset=["lat", "lng"])
     geo = geo[(geo["lat"] != 0) & (geo["lng"] != 0)]
     features = []
     for row in geo.itertuples():
         amt = row.contract_amount
-        features.append({
-            "type": "Feature",
-            "geometry": {"type": "Point", "coordinates": [round(float(row.lng), 5), round(float(row.lat), 5)]},
-            "properties": {
-                "id": row.id,
-                "title": row.title,
-                "status": row.status,
-                "project_type": row.project_type,
-                "verification_status": row.verification_status,
-                "absence_score": num_or_none(row.absence_score),
-                "change_class": row.change_class if isinstance(row.change_class, str) else None,
-                "ndbi_d": num_or_none(row.ndbi_d),
-                "ndvi_d": num_or_none(row.ndvi_d),
-                "contract_amount": float(amt) if pd.notna(amt) else None,
-                "contractor": row.contractor,
-                "region": row.region,
-                "district": row.district,
-                "target_completion": row.target_completion,
-            },
-        })
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [round(float(row.lng), 5), round(float(row.lat), 5)],
+                },
+                "properties": {
+                    "id": row.id,
+                    "title": row.title,
+                    "status": row.status,
+                    "project_type": row.project_type,
+                    "verification_status": row.verification_status,
+                    "absence_score": num_or_none(row.absence_score),
+                    "change_class": row.change_class if isinstance(row.change_class, str) else None,
+                    "ndbi_d": num_or_none(row.ndbi_d),
+                    "ndvi_d": num_or_none(row.ndvi_d),
+                    "contract_amount": float(amt) if pd.notna(amt) else None,
+                    "contractor": row.contractor,
+                    "region": row.region,
+                    "district": row.district,
+                    "target_completion": row.target_completion,
+                },
+            }
+        )
     return envelope(
         {"type": "FeatureCollection", "features": features},
         meta={"query_time_ms": 0, "feature_count": len(features), "total_matching": len(features)},
@@ -260,7 +287,9 @@ def build_geojson(df: pd.DataFrame) -> dict:
 
 
 def build_overview(df: pd.DataFrame, classification: dict) -> dict:
-    classified = df[df["verification_status"].isin(["VERIFIED", "NOT_VISIBLE", "PARTIAL", "INCONCLUSIVE"])]
+    classified = df[
+        df["verification_status"].isin(["VERIFIED", "NOT_VISIBLE", "PARTIAL", "INCONCLUSIVE"])
+    ]
     not_visible = df[df["verification_status"] == "NOT_VISIBLE"]
     verified = df[df["verification_status"] == "VERIFIED"]
     total = len(df)
@@ -274,7 +303,9 @@ def build_overview(df: pd.DataFrame, classification: dict) -> dict:
         "completed_projects": completed,
         "completion_rate": round(completed / total * 100, 1) if total else 0.0,
         "not_visible_count": int(len(not_visible)),
-        "not_visible_rate": round(len(not_visible) / len(classified) * 100, 1) if len(classified) else 0.0,
+        "not_visible_rate": round(len(not_visible) / len(classified) * 100, 1)
+        if len(classified)
+        else 0.0,
         "not_visible_value": not_visible_value,
         "verified_count": int(len(verified)),
         "assessed_count": int(len(classified)),
@@ -304,14 +335,23 @@ def build_charts(df: pd.DataFrame) -> dict:
     sc = df["status"].value_counts()
     for st in ["COMPLETED", "ONGOING", "FOR_PROCUREMENT", "TERMINATED", "NOT_YET_STARTED"]:
         if st in sc.index:
-            status_dist.append({"name": _STATUS_LABELS[st], "status": st, "value": int(sc[st]), "color": _STATUS_COLORS[st]})
+            status_dist.append(
+                {
+                    "name": _STATUS_LABELS[st],
+                    "status": st,
+                    "value": int(sc[st]),
+                    "color": _STATUS_COLORS[st],
+                }
+            )
 
     # Count + value of "no construction visible" by region.
     nv = df[df["verification_status"] == "NOT_VISIBLE"]
     rg = (
-        nv[nv["region"] != ""].groupby("region")
+        nv[nv["region"] != ""]
+        .groupby("region")
         .agg(count=("id", "count"), value=("contract_amount", "sum"))
-        .reset_index().sort_values("count", ascending=False)
+        .reset_index()
+        .sort_values("count", ascending=False)
     )
     not_visible_by_region = [
         {"region": r["region"], "count": int(r["count"]), "value": float(r["value"] or 0)}
@@ -323,7 +363,9 @@ def build_charts(df: pd.DataFrame) -> dict:
     for t in ["VERIFIED", "PARTIAL", "INCONCLUSIVE", "NOT_VISIBLE"]:
         n = int((df["verification_status"] == t).sum())
         if n:
-            tier_dist.append({"name": _TIER_LABELS[t], "tier": t, "value": n, "color": _TIER_COLORS[t]})
+            tier_dist.append(
+                {"name": _TIER_LABELS[t], "tier": t, "value": n, "color": _TIER_COLORS[t]}
+            )
 
     # Value with no visible construction, by funding year.
     yr = df.dropna(subset=["infra_year"]).copy()
@@ -332,20 +374,24 @@ def build_charts(df: pd.DataFrame) -> dict:
     for year in sorted(yr["infra_year"].unique()):
         s = yr[yr["infra_year"] == year]
         nv_s = s[s["verification_status"] == "NOT_VISIBLE"]
-        yearly.append({
-            "year": str(year),
-            "value": round(float(s["contract_amount"].fillna(0).sum()) / 1e9, 3),
-            "not_visible": round(float(nv_s["contract_amount"].fillna(0).sum()) / 1e9, 3),
-            "count": int(len(s)),
-            "not_visible_count": int(len(nv_s)),
-        })
+        yearly.append(
+            {
+                "year": str(year),
+                "value": round(float(s["contract_amount"].fillna(0).sum()) / 1e9, 3),
+                "not_visible": round(float(nv_s["contract_amount"].fillna(0).sum()) / 1e9, 3),
+                "count": int(len(s)),
+                "not_visible_count": int(len(nv_s)),
+            }
+        )
 
-    return envelope({
-        "status_dist": status_dist,
-        "not_visible_by_region": not_visible_by_region,
-        "tier_dist": tier_dist,
-        "yearly": yearly,
-    })
+    return envelope(
+        {
+            "status_dist": status_dist,
+            "not_visible_by_region": not_visible_by_region,
+            "tier_dist": tier_dist,
+            "yearly": yearly,
+        }
+    )
 
 
 def write_json(path: Path, obj: dict) -> str:
@@ -357,23 +403,58 @@ def write_json(path: Path, obj: dict) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--classification", default="", help="CSV from calibrate_classifier.py")
+    ap.add_argument(
+        "--classification",
+        default="",
+        help="CSV from calibrate_classifier.py (default: data/classification/flood_control.csv)",
+    )
+    ap.add_argument(
+        "--allow-unclassified",
+        action="store_true",
+        help="Permit baking with no classification CSV (every project reads UNVERIFIED). "
+        "Without this flag a missing classification aborts so an all-grey map cannot "
+        "ship by accident.",
+    )
     args = ap.parse_args()
     if not PARQUET.exists():
         raise SystemExit(f"Parquet not found: {PARQUET}")
 
-    classification = load_classification(Path(args.classification) if args.classification else None)
+    cls_path = (
+        Path(args.classification)
+        if args.classification
+        else ROOT / "data" / "classification" / "flood_control.csv"
+    )
+    if not cls_path.exists():
+        if not args.allow_unclassified:
+            raise SystemExit(
+                f"Classification CSV not found: {cls_path}\n"
+                "Refusing to bake an all-UNVERIFIED dataset. Pass --allow-unclassified to override."
+            )
+        cls_path = None
+    classification = load_classification(cls_path)
     df = build_frame(classification)
 
     tc = df["verification_status"].value_counts().to_dict()
     print(f"Projects: {len(df)}  classified rows: {len(classification)}")
     print("Tier counts:", {k: int(v) for k, v in tc.items()})
     nv = df[df["verification_status"] == "NOT_VISIBLE"]
-    print(f"No construction visible: {len(nv)}  value: ₱{nv['contract_amount'].fillna(0).sum()/1e9:.1f}B")
+    print(
+        f"No construction visible: {len(nv)}  "
+        f"value: ₱{nv['contract_amount'].fillna(0).sum() / 1e9:.1f}B"
+    )
+
+    if len(df) == 0:
+        raise SystemExit("Bake produced 0 projects — refusing to write.")
+    if classification and len(nv) == 0:
+        raise SystemExit("Classification provided but 0 NOT_VISIBLE projects — refusing to write.")
+
+    highlights_df = df[df["verification_status"].isin(HIGHLIGHT_TIERS)]
+    context_df = df[~df["verification_status"].isin(HIGHLIGHT_TIERS)]
 
     OUT.mkdir(parents=True, exist_ok=True)
     hashes = {}
-    hashes["projects.json"] = write_json(OUT / "projects.json", build_geojson(df))
+    hashes["highlights.json"] = write_json(OUT / "highlights.json", build_geojson(highlights_df))
+    hashes["context.json"] = write_json(OUT / "context.json", build_geojson(context_df))
     hashes["overview.json"] = write_json(OUT / "overview.json", build_overview(df, classification))
     hashes["charts.json"] = write_json(OUT / "charts.json", build_charts(df))
     manifest = {
@@ -385,13 +466,19 @@ def main() -> None:
         "with_coordinates": int(df[["lat", "lng"]].notna().all(axis=1).sum()),
         "classified_count": len(classification),
         "not_visible_count": int(len(nv)),
+        "verified_count": int((df["verification_status"] == "VERIFIED").sum()),
         "absence_cut": ABSENCE_CUT,
         "sha256": hashes,
     }
     write_json(OUT / "manifest.json", manifest)
+    # The pre-split bundle is superseded by highlights.json + context.json.
+    legacy = OUT / "projects.json"
+    if legacy.exists():
+        legacy.unlink()
+        print("  removed legacy projects.json (superseded by highlights/context split)")
     for name, h in hashes.items():
         size = (OUT / name).stat().st_size
-        print(f"  {name:16} {size/1024:8.1f} KB  {h[:12]}")
+        print(f"  {name:16} {size / 1024:8.1f} KB  {h[:12]}")
 
 
 if __name__ == "__main__":

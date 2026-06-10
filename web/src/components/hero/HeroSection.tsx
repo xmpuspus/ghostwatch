@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import CountUp from "@/components/ui/CountUp";
 import { api } from "@/lib/api";
-import { DISCLAIMER } from "@/lib/constants";
+import { STRINGS, useLang } from "@/lib/lang";
 import type { OverviewStats } from "@/types/project";
 
 const ESRI_SATELLITE_BG =
@@ -32,12 +32,16 @@ function RegMark({ className }: { className?: string }) {
 
 export default function HeroSection() {
   const [stats, setStats] = useState<OverviewStats | null>(null);
+  const [statsFailed, setStatsFailed] = useState(false);
+  const { lang } = useLang();
+  const t = STRINGS[lang];
 
   useEffect(() => {
     api.analytics
       .overview()
       .then((res) => setStats(res.data))
-      .catch(() => null);
+      // A zeroed counter on this site is a false statement; show "n/a" instead.
+      .catch(() => setStatsFailed(true));
   }, []);
 
   return (
@@ -98,7 +102,7 @@ export default function HeroSection() {
           animate="show"
           className="instrument-label mb-5"
         >
-          Open source &middot; DPWH infrastructure &middot; Sentinel-2
+          {t.heroKicker}
         </motion.p>
 
         <motion.h1
@@ -109,9 +113,9 @@ export default function HeroSection() {
           className="font-display text-[12vw] font-extrabold leading-[0.92] tracking-tight break-words sm:text-6xl md:text-7xl lg:text-8xl"
           style={{ color: "var(--color-text-primary)" }}
         >
-          <span className="block">Construction,</span>
+          <span className="block">{t.heroLine1}</span>
           <span className="block" style={{ color: "var(--color-accent)" }}>
-            from space.
+            {t.heroLine2}
           </span>
         </motion.h1>
 
@@ -123,11 +127,7 @@ export default function HeroSection() {
           className="mt-7 max-w-xl text-base leading-relaxed md:text-lg"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Completed DPWH projects across the Philippines, mapped from public data and
-          checked against free Sentinel-2 imagery for visible construction. Where the
-          satellite sees it the map says so; where it does not, it says that too, a
-          record of what is visible from space, never a claim about any project. Open
-          source: clone it, point it at any country.
+          {t.heroSub}
         </motion.p>
 
         <motion.div
@@ -139,12 +139,12 @@ export default function HeroSection() {
         >
           <Link href="/map">
             <button className="btn-primary flex w-full items-center justify-center gap-2 sm:w-auto">
-              Explore the map
+              {t.exploreMap}
               <ArrowRight size={15} />
             </button>
           </Link>
           <Link href="/verify">
-            <button className="btn-ghost w-full sm:w-auto">Browse satellite checks</button>
+            <button className="btn-ghost w-full sm:w-auto">{t.browseChecks}</button>
           </Link>
         </motion.div>
 
@@ -159,12 +159,12 @@ export default function HeroSection() {
         >
           <Ledger
             label="Projects Mapped"
-            value={stats?.with_coordinates ?? stats?.total_projects ?? 0}
+            value={statsFailed ? null : stats?.with_coordinates ?? stats?.total_projects ?? 0}
             source="Source: DPWH"
           />
           <Ledger
             label="Contract Value"
-            value={stats ? stats.total_value / 1_000_000_000 : 0}
+            value={statsFailed ? null : stats ? stats.total_value / 1_000_000_000 : 0}
             prefix="₱"
             suffix="B"
             decimals={1}
@@ -173,13 +173,13 @@ export default function HeroSection() {
           />
           <Ledger
             label="No Construction Visible"
-            value={stats?.not_visible_count ?? 0}
+            value={statsFailed ? null : stats?.not_visible_count ?? 0}
             source="Not seen from space"
             ghost
           />
           <Ledger
             label="Regions Covered"
-            value={stats?.regions_covered ?? 0}
+            value={statsFailed ? null : stats?.regions_covered ?? 0}
             source="Nationwide"
           />
         </motion.div>
@@ -211,7 +211,7 @@ export default function HeroSection() {
           className="mt-6 max-w-3xl text-[11px] leading-relaxed"
           style={{ color: "var(--color-text-muted)" }}
         >
-          {DISCLAIMER}
+          {t.disclaimer}
         </p>
       </div>
     </section>
@@ -229,7 +229,7 @@ function Ledger({
   ghost = false,
 }: {
   label: string;
-  value: number;
+  value: number | null;
   prefix?: string;
   suffix?: string;
   decimals?: number;
@@ -241,9 +241,13 @@ function Ledger({
     <div style={{ backgroundColor: "var(--color-bg)" }} className="px-4 py-5">
       <div
         className={`stat-value ${lead ? "text-3xl md:text-4xl" : "text-2xl md:text-3xl"}`}
-        style={{ color: ghost ? "var(--color-ghost)" : lead ? "var(--color-accent)" : "var(--color-text-primary)" }}
+        style={{ color: ghost ? "var(--color-absence)" : lead ? "var(--color-accent)" : "var(--color-text-primary)" }}
       >
-        <CountUp end={value} prefix={prefix} suffix={suffix} decimals={decimals} />
+        {value === null ? (
+          <span title="Data failed to load">n/a</span>
+        ) : (
+          <CountUp end={value} prefix={prefix} suffix={suffix} decimals={decimals} />
+        )}
       </div>
       <p className="mt-2 text-[11px] font-medium" style={{ color: "var(--color-text-secondary)" }}>
         {label}

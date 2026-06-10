@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 
-export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center px-6 pt-14 text-center"
@@ -27,6 +33,11 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
           <button className="btn-ghost">Back to the map</button>
         </Link>
       </div>
+      {/* Surface what actually broke so a bug report can carry it */}
+      <p className="mt-8 font-mono text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+        {error?.message ? `${error.message.slice(0, 140)}` : "unknown error"}
+        {error?.digest ? ` · ref ${error.digest}` : ""}
+      </p>
     </div>
   );
 }

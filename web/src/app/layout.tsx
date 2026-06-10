@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
+import { LangProvider } from "@/lib/lang";
 
 // Sentinel Instrument type system — a sharp grotesk display, a humanist grotesk
 // body, and a precise mono reserved for measured data (coords, %, ₱, dates).
@@ -46,8 +47,10 @@ export default function RootLayout({
       className={`${display.variable} ${body.variable} ${mono.variable}`}
     >
       <body>
-        <Header />
-        <main>{children}</main>
+        <LangProvider>
+          <Header />
+          <main>{children}</main>
+        </LangProvider>
       </body>
     </html>
   );

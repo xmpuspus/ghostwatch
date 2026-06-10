@@ -7,6 +7,7 @@ it into GhostWatch's standard schema. Ported from InfraWatch PH dpwh.py.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import subprocess
 from pathlib import Path
@@ -103,6 +104,21 @@ class PhilippinesAdapter(BaseAdapter):
                 if result.returncode == 0 and output_path.exists():
                     size_mb = output_path.stat().st_size / (1024 * 1024)
                     logger.info("Downloaded %.1f MB to %s", size_mb, output_path)
+                    expected = get_settings().dpwh_parquet_sha256
+                    if expected:
+                        actual = hashlib.sha256(output_path.read_bytes()).hexdigest()
+                        if actual != expected:
+                            logger.error(
+                                "Checksum mismatch for %s: expected %s, got %s — "
+                                "the pinned dataset revision did not produce the "
+                                "expected bytes; refusing the download.",
+                                output_path.name,
+                                expected[:12],
+                                actual[:12],
+                            )
+                            output_path.unlink(missing_ok=True)
+                            return None
+                        logger.info("Checksum verified (%s…)", actual[:12])
                     return output_path
                 logger.warning(
                     "Download attempt %d failed (rc=%d): %s",
@@ -128,7 +144,11 @@ class PhilippinesAdapter(BaseAdapter):
             from datasets import load_dataset
 
             logger.info("Attempting download via HuggingFace datasets library")
-            ds = load_dataset("bettergovph/dpwh-transparency-data", split="train")
+            ds = load_dataset(
+                "bettergovph/dpwh-transparency-data",
+                split="train",
+                revision=get_settings().dpwh_dataset_revision or None,
+            )
             df = ds.to_pandas()
             df.to_parquet(output_path, index=False)
             logger.info("Downloaded %d records via datasets library", len(df))

@@ -4,14 +4,11 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 COPY . .
+# next.config.mjs sets output:"export" — the build emits a static site in out/,
+# not .next/standalone. Serve it with nginx.
 RUN npm run build
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+FROM nginx:alpine AS runner
+COPY --from=builder /app/out /usr/share/nginx/html
 
-EXPOSE 3000
-CMD ["node", "server.js"]
+EXPOSE 80

@@ -80,6 +80,9 @@ class SatelliteCollector:
                 )
             )
 
+            if self.settings.satellite_scl_mask:
+                collection = collection.map(self._mask_scl_clouds)
+
             count = collection.size().getInfo()
             if count == 0:
                 logger.warning(
@@ -92,6 +95,16 @@ class SatelliteCollector:
         except Exception as exc:
             logger.error("S2 composite failed: %s", exc)
             return None
+
+    @staticmethod
+    def _mask_scl_clouds(image: Any) -> Any:
+        """Mask cloud-shadow (3), medium/high-probability cloud (8, 9), and
+        thin cirrus (10) pixels using the Scene Classification Layer, so they
+        do not enter the median composite even on scenes that pass the
+        scene-level cloud filter."""
+        scl = image.select("SCL")
+        clear = scl.neq(3).And(scl.neq(8)).And(scl.neq(9)).And(scl.neq(10))
+        return image.updateMask(clear)
 
     def compute_indices(self, composite: Any) -> dict:
         """Compute mean NDBI, NDVI, BSI from a GEE Sentinel-2 composite.

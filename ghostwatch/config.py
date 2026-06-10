@@ -25,16 +25,23 @@ class GhostWatchSettings(BaseSettings):
     satellite_buffer_meters: int = 500
     satellite_cloud_threshold: int = 20
     satellite_date_buffer_days: int = 90
+    # Per-pixel cloud/shadow masking via the S2 Scene Classification Layer.
+    # Scene-level CLOUDY_PIXEL_PERCENTAGE filtering alone leaves residual
+    # cloud/shadow in the median composite, which depresses NDBI.
+    satellite_scl_mask: bool = True
 
     # Data directories
     data_dir: Path = Path("data")
     raw_dir: Path = Path("")
     processed_dir: Path = Path("")
 
-    # Data sources
+    # Data sources — pinned to a dataset revision so the bytes feeding the
+    # pipeline cannot drift under us when the upstream repo updates.
+    dpwh_dataset_revision: str = "648ea96af4f7625d606fda0b78803917913a26b7"
+    dpwh_parquet_sha256: str = "5b411cf3f112fabd1913c70681791e5e2b78b43a8393f489f48bd882f154e123"
     dpwh_parquet_url: str = (
         "https://huggingface.co/datasets/bettergovph/dpwh-transparency-data"
-        "/resolve/main/dpwh_transparency_data.parquet"
+        "/resolve/648ea96af4f7625d606fda0b78803917913a26b7/dpwh_transparency_data.parquet"
     )
 
     @model_validator(mode="after")

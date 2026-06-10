@@ -61,7 +61,7 @@ flowchart LR
 ```
 
 1. Load project records via a country adapter (Philippines, CSV generic, or custom)
-2. Collect Sentinel-2 cloud-masked composites for the before and after periods via Google Earth Engine
+2. Collect Sentinel-2 composites for the before and after periods via Google Earth Engine (scene-level cloud filter + per-pixel SCL cloud/shadow mask, median composite)
 3. Compute NDBI, NDVI, and BSI from Sentinel-2 band reflectances
 4. Calculate change metrics: `after_index − before_index` for each band
 5. Classify the site: CONSTRUCTION_DETECTED, VEGETATION_CLEARED, PARTIAL_CONSTRUCTION, NO_CHANGE, or INSUFFICIENT_DATA
@@ -97,13 +97,12 @@ earthengine authenticate
 ## Quick Start
 
 ```bash
-# 1. Download 248K Philippine DPWH projects
-ghostwatch fetch --adapter philippines --output data/raw
+# 1. Download 248K Philippine DPWH projects (pinned dataset revision, checksum-verified)
+ghostwatch fetch --adapter philippines
 
 # Downloading DPWH dataset from HuggingFace...
-# Downloaded 47.3 MB to data/raw/dpwh_projects.parquet
-# Parsed 248,220 records, skipped 18
-# 214,747 records with coordinates (86.5%)
+# Downloaded 23.2 MB to data/raw/dpwh/dpwh_projects.parquet
+# Checksum verified (5b411cf3f112…)
 
 # 2. Verify a single project location
 ghostwatch verify 14.5995 120.9842 \
@@ -145,15 +144,22 @@ GHOSTWATCH_EE_KEY=/path/to/ee-key.json python3 scripts/calibrate_classifier.py \
     --category "flood control and drainage" --out data/classified/flood_control.csv
 
 # 2. Bake the static dataset (real DPWH parquet + classification -> static JSON).
-python3 scripts/bake_projects.py --classification data/classified/flood_control.csv
-#   -> web/public/data/{projects,overview,charts}.json  (+ manifest)
+#    The committed classification lives at data/classification/flood_control.csv
+#    (the default), so a plain run reproduces the live site's data.
+python3 scripts/bake_projects.py
+#   -> web/public/data/{highlights,context,overview,charts}.json  (+ manifest)
 
-# 3. Build the static export and deploy.
+# 3. Validate the bake (same gate CI runs before any deploy).
+python3 scripts/validate_data.py
+
+# 4. Build the static export and deploy.
 cd web && npm run build    # output: 'export' -> web/out/
 vercel deploy --prod       # or push to main (git auto-deploy, rootDir=web)
 ```
 
 The frontend ([`web/`](web/)) is the same dashboard as the local tool, switched to `output: 'export'` and reading `/data/*` instead of the API. `web/vercel.json` adds the security headers and edge caching. No mock data is used anywhere: every published number is recomputed from the DPWH parquet, and every marker comes from real Sentinel-2 change-detection. A site with no visible construction is a prompt to look, never an accusation. See [`scripts/calibrate_classifier.py`](scripts/calibrate_classifier.py) and [`scripts/bake_projects.py`](scripts/bake_projects.py).
+
+The baked files are public and documented: [`docs/DATA.md`](docs/DATA.md) is the data dictionary, with `curl` commands to pull every dataset the site renders and a per-file sha256 manifest to verify downloads. Any project deep-links as `https://tulaypinoy.ph/map?id=<contractId>`.
 
 ---
 
@@ -219,22 +225,23 @@ docker-compose up
 ### Regional analysis via Python API
 
 ```python
-import pandas as pd
+from pathlib import Path
 from ghostwatch.adapters.philippines import PhilippinesAdapter
 
 adapter = PhilippinesAdapter()
-df = adapter.parse("data/raw/dpwh_projects.parquet")
+df = adapter.parse(Path("data/raw/dpwh/dpwh_projects.parquet"))
 
-# Projects flagged for review, grouped by region
-flagged = df[df["flagged_for_review"] == True]
+# Completed projects grouped by region (satellite flags come from the
+# verification pipeline, not the raw record — see scripts/calibrate_classifier.py)
+completed = df[df["status"] == "completed"]
 
 by_region = (
-    flagged.groupby("region")
+    completed.groupby("region")
     .agg(
-        flagged_count=("project_id", "count"),
-        flagged_budget=("contract_amount", "sum"),
+        completed_count=("project_id", "count"),
+        completed_budget=("contract_amount", "sum"),
     )
-    .sort_values("flagged_count", ascending=False)
+    .sort_values("completed_count", ascending=False)
 )
 print(by_region.head(5))
 ```
@@ -257,7 +264,7 @@ GhostWatch ships a Next.js 14 frontend with five views, all dark-themed.
 
 ## Satellite Methodology
 
-GhostWatch uses Sentinel-2 Level-2A (surface reflectance) composites via Google Earth Engine. Each composite is the median of all cloud-free acquisitions within a 90-day window, filtered to scenes with less than 20% cloud cover. A 500-meter buffer is the library default applied around each project coordinate before computing band statistics; the live tulaypinoy.ph deploy uses a tighter 100-meter buffer.
+GhostWatch uses Sentinel-2 Level-2A (surface reflectance) composites via Google Earth Engine. Each composite is the median of acquisitions within a 90-day window, filtered to scenes with less than 20% cloud cover, with per-pixel cloud-shadow/cloud/cirrus masking from the Scene Classification Layer applied on top (`GHOSTWATCH_SATELLITE_SCL_MASK`, on by default; the currently-published tulaypinoy.ph dataset was computed with scene-level filtering and the median composite). A 500-meter buffer is the library default applied around each project coordinate before computing band statistics; the live tulaypinoy.ph deploy uses a tighter 100-meter buffer.
 
 ### Spectral indices
 
@@ -328,7 +335,7 @@ Download project data using a country adapter.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `--adapter` | str | `philippines` | Data adapter (`philippines`, `csv`) |
+| `--adapter` | str | `philippines` | Data adapter (`philippines`; bring-your-own CSV via the Python `CSVAdapter`, see below) |
 | `--output` | path | `data/raw` | Directory to write downloaded data |
 
 ### `ghostwatch serve`
@@ -550,7 +557,7 @@ ghostwatch/
 │   │   ├── classifier.py        # ChangeClass, classify_change(), is_ghost_project()
 │   │   ├── collector.py         # SatelliteCollector — GEE integration
 │   │   ├── indices.py           # compute_ndbi(), compute_ndvi(), compute_bsi()
-│   │   └── exporter.py          # Export to CSV / GeoJSON
+│   │   └── exporter.py          # GEE thumbnail URLs + image downloads
 │   └── adapters/
 │       ├── base.py              # BaseAdapter abstract class
 │       ├── philippines.py       # DPWH 248K project adapter

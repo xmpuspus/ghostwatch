@@ -111,7 +111,10 @@ export default function BeforeAfterSlider({
       onMouseDown={startDrag}
       onTouchStart={startDrag}
     >
+      {/* Plain <img>: next/image optimization is unavailable on output:"export",
+          and these are pre-sized baked satellite PNGs served same-origin. */}
       {beforeUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={beforeUrl}
           alt="Before satellite imagery"
@@ -120,6 +123,7 @@ export default function BeforeAfterSlider({
         />
       )}
       {afterUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={afterUrl}
           alt="After satellite imagery"

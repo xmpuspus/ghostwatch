@@ -164,12 +164,14 @@ class DataService:
             filtered = filtered[filtered["contract_amount"] <= max_amount]
         if search:
             q = search.lower()
+            # regex=False: q is raw user input — treat as a literal substring,
+            # never a pattern (regex injection / ReDoS).
             mask = (
-                filtered["title"].str.lower().str.contains(q, na=False)
+                filtered["title"].str.lower().str.contains(q, na=False, regex=False)
                 | filtered.get("contractor", pd.Series(dtype=str))
                 .str.lower()
-                .str.contains(q, na=False)
-                | filtered["region"].str.lower().str.contains(q, na=False)
+                .str.contains(q, na=False, regex=False)
+                | filtered["region"].str.lower().str.contains(q, na=False, regex=False)
             )
             filtered = filtered[mask]
 

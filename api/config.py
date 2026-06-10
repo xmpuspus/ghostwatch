@@ -17,6 +17,7 @@ if sys.platform == "darwin" and not os.environ.get("SSL_CERT_FILE"):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
+        env_prefix="GHOSTWATCH_",
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,

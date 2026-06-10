@@ -1,8 +1,8 @@
 export type ProjectStatus =
   | "COMPLETED"
   | "ONGOING"
+  | "FOR_PROCUREMENT"
   | "NOT_YET_STARTED"
-  | "SUSPENDED"
   | "TERMINATED";
 
 export type VerificationStatus =
@@ -24,37 +24,26 @@ export type ProjectType =
   | "MULTI_PURPOSE"
   | "OTHER";
 
-export type FundSource =
-  | "GAA"
-  | "PDAF"
-  | "LOCAL"
-  | "FOREIGN_ASSISTED"
-  | "PPP";
-
-export type RedFlagSeverity = "critical" | "high" | "medium" | "low";
-
+// Mirrors the feature properties emitted by scripts/bake_projects.py
+// (build_geojson). tests/test_data_contract.py enforces this contract against
+// the baked files — keep the two in sync.
 export interface Project {
   id: string;
   title: string;
   contractor: string;
-  contract_amount: number;
-  fund_source: FundSource;
+  contract_amount: number | null;
   district: string;
   region: string;
   lat: number;
   lng: number;
   status: ProjectStatus;
   project_type: ProjectType;
-  start_date: string | null;
   target_completion: string | null;
-  actual_completion: string | null;
   verification_status: VerificationStatus;
-  satellite_score: number | null;
-  has_satellite_image: boolean;
-  absence_score?: number | null;
-  change_class?: string | null;
-  ndbi_d?: number | null;
-  ndvi_d?: number | null;
+  absence_score: number | null;
+  change_class: string | null;
+  ndbi_d: number | null;
+  ndvi_d: number | null;
 }
 
 export interface VerificationResult {
@@ -74,15 +63,6 @@ export interface VerificationResult {
   satellite_url_before: string | null;
   satellite_url_after: string | null;
   data_source?: "optical" | "sar_proxy";
-}
-
-export interface RedFlag {
-  type: string;
-  severity: RedFlagSeverity;
-  description: string;
-  evidence: string;
-  project_id?: string;
-  contractor?: string;
 }
 
 export interface SatelliteOverview {
@@ -111,24 +91,6 @@ export interface OverviewStats {
   with_coordinates?: number;
   data_available: boolean;
   satellite?: SatelliteOverview;
-}
-
-export interface BudgetData {
-  by_region: { region: string; amount: number; count: number }[];
-  by_type: { type: ProjectType; amount: number; count: number }[];
-  by_year: { year: number; amount: number; count: number }[];
-  by_fund_source: { source: FundSource; amount: number; count: number }[];
-}
-
-export interface RegionalData {
-  region: string;
-  total_projects: number;
-  total_value: number;
-  completion_rate: number;
-  not_visible_rate: number;
-  contractor_count: number;
-  hhi: number;
-  per_capita_spending: number;
 }
 
 export interface Pagination {

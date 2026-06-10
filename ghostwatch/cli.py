@@ -13,6 +13,17 @@ app = typer.Typer(name="ghostwatch", help="Satellite verification of government 
 logger = logging.getLogger(__name__)
 
 
+@app.callback()
+def _setup(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Configure logging so long operations (fetch, verify) report progress."""
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(message)s",
+    )
+
+
 @app.command()
 def verify(
     lat: float = typer.Argument(..., help="Latitude of project location"),
@@ -81,7 +92,10 @@ def verify(
 @app.command()
 def fetch(
     adapter: str = typer.Option("philippines", help="Data adapter to use"),
-    output: Path = typer.Option(Path("data/raw"), help="Directory to write downloaded data"),
+    output: Path = typer.Option(
+        Path("data/raw/dpwh"),
+        help="Directory to write downloaded data (bake scripts read data/raw/dpwh)",
+    ),
 ) -> None:
     """Download raw project data using the specified adapter."""
     from ghostwatch.adapters.philippines import PhilippinesAdapter

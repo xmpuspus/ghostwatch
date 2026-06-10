@@ -1,5 +1,15 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+// Resolved at build time (static export) — the manifest is written by the bake,
+// so this is the true generation date of every number on the site.
+import manifest from "../../../public/data/manifest.json";
+
+const DATA_AS_OF = new Date(manifest.built_at).toLocaleDateString("en-PH", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  timeZone: "Asia/Manila",
+});
 
 const EXTERNAL = [
   { label: "Source code", href: "https://github.com/xmpuspus/ghostwatch" },
@@ -68,8 +78,8 @@ export default function Footer() {
             className="text-[10px]"
             style={{ color: "var(--color-text-muted)", fontFamily: "var(--font-mono-stack)" }}
           >
-            Data: DPWH transparency dataset &middot; Imagery: Copernicus Sentinel-2 &middot; MIT
-            licensed
+            Data: DPWH transparency dataset, as of {DATA_AS_OF} &middot; Imagery: Copernicus
+            Sentinel-2 &middot; MIT licensed
           </p>
           <p
             className="text-[10px]"

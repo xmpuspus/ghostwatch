@@ -47,7 +47,7 @@ export default function MethodologyPage() {
             The Core Insight
           </h2>
           <p className="mb-4 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
-            When humans build things, the Earth's surface changes in predictable ways:
+            When humans build things, the Earth&apos;s surface changes in predictable ways:
           </p>
           <div className="space-y-3">
             {[
@@ -172,7 +172,7 @@ export default function MethodologyPage() {
                     label: "No Construction Visible",
                     condition: "Completed + built-up index flat or falling (top of absence rank)",
                     interp: "No construction visible where a finished project should show it. A prompt to look, not a claim",
-                    color: "var(--color-ghost)",
+                    color: "var(--color-absence)",
                   },
                 ].map((row) => (
                   <tr
@@ -217,8 +217,14 @@ export default function MethodologyPage() {
             deliberately conservative: at about 2 percent of assessed sites it sits well below the
             rate the government&apos;s own Independent Commission for Infrastructure found when it
             reviewed roughly 8,000 flood-control projects and confirmed about one in twenty as
-            anomalous. A red marker is a prompt for ground-truth review, never proof: narrow or small
-            structures can be genuinely built yet sit below optical resolution.
+            anomalous. To be precise about what that comparison is: choosing a cut so the flagged
+            share sits below a known confirmed rate is a conservative budgeting choice, not
+            corroboration. We have not matched individual flagged sites against the Commission&apos;s
+            findings, and the two lists should not be assumed to overlap. The cut itself is a fixed
+            parameter (absence score &ge; 0.62, published with the data files and in the open-source
+            bake script) so anyone can re-derive the red set or move the cut and see what changes. A
+            red marker is a prompt for ground-truth review, never proof: narrow or small structures
+            can be genuinely built yet sit below optical resolution.
           </p>
         </section>
 

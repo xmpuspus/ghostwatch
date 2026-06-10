@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { useLang } from "@/lib/lang";
 
 const NAV = [
   { href: "/map", label: "Map" },
@@ -36,9 +36,12 @@ function Wordmark() {
   );
 }
 
+// Plain CSS in place of framer-motion: the header ships in the shared layout
+// chunk on every page, and a spring nav underline is not worth 30kB there.
 export default function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { lang, setLang } = useLang();
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -72,20 +75,42 @@ export default function Header() {
                 >
                   {item.label}
                 </span>
-                {active && (
-                  <motion.div
-                    layoutId="nav-underline"
-                    className="absolute inset-x-2 -bottom-px h-[2px]"
-                    style={{ backgroundColor: "var(--color-accent)" }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
+                <span
+                  className="absolute inset-x-2 -bottom-px h-[2px] transition-opacity duration-200"
+                  style={{
+                    backgroundColor: "var(--color-accent)",
+                    opacity: active ? 1 : 0,
+                  }}
+                />
               </Link>
             );
           })}
         </nav>
 
-        {/* Mobile toggle */}
+        {/* Language toggle + mobile menu */}
+        <div className="flex items-center gap-2">
+          <div
+            role="radiogroup"
+            aria-label="Language"
+            className="flex rounded p-0.5"
+            style={{ border: "1px solid var(--color-border)" }}
+          >
+            {(["en", "tl"] as const).map((l) => (
+              <button
+                key={l}
+                role="radio"
+                aria-checked={lang === l}
+                onClick={() => setLang(l)}
+                className="rounded px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors"
+                style={{
+                  backgroundColor: lang === l ? "var(--color-accent)" : "transparent",
+                  color: lang === l ? "var(--color-text-inverted)" : "var(--color-text-muted)",
+                }}
+              >
+                {l === "en" ? "EN" : "TL"}
+              </button>
+            ))}
+          </div>
         <button
           className="flex h-9 w-9 items-center justify-center rounded md:hidden"
           style={{ color: "var(--color-text-secondary)", border: "1px solid var(--color-border)" }}
@@ -95,50 +120,49 @@ export default function Header() {
         >
           {open ? <X size={16} /> : <Menu size={16} />}
         </button>
+        </div>
       </div>
 
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {open && (
-          <motion.nav
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden md:hidden"
-            style={{
-              backgroundColor: "rgba(11, 14, 15, 0.98)",
-              borderBottom: "1px solid var(--color-border)",
-            }}
-          >
-            <div className="flex flex-col px-5 py-2">
-              {NAV.map((item) => {
-                const active = isActive(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-between py-3"
-                    style={{ borderTop: "1px solid var(--color-border-subtle)" }}
+      {/* Mobile drawer — CSS grid-rows collapse, no animation library */}
+      <nav
+        className="grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 md:hidden"
+        style={{
+          gridTemplateRows: open ? "1fr" : "0fr",
+          opacity: open ? 1 : 0,
+          backgroundColor: "rgba(11, 14, 15, 0.98)",
+          borderBottom: open ? "1px solid var(--color-border)" : "none",
+        }}
+        aria-hidden={!open}
+      >
+        <div className="min-h-0">
+          <div className="flex flex-col px-5 py-2">
+            {NAV.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between py-3"
+                  style={{ borderTop: "1px solid var(--color-border-subtle)" }}
+                  tabIndex={open ? 0 : -1}
+                >
+                  <span
+                    className="font-mono text-xs uppercase tracking-[0.14em]"
+                    style={{
+                      color: active
+                        ? "var(--color-accent)"
+                        : "var(--color-text-secondary)",
+                    }}
                   >
-                    <span
-                      className="font-mono text-xs uppercase tracking-[0.14em]"
-                      style={{
-                        color: active
-                          ? "var(--color-accent)"
-                          : "var(--color-text-secondary)",
-                      }}
-                    >
-                      {item.label}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </motion.nav>
-        )}
-      </AnimatePresence>
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
     </header>
   );
 }
