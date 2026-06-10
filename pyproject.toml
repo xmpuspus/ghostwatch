@@ -33,6 +33,7 @@ web = [
 dev = [
     "pytest>=8.0",
     "ruff>=0.5",
+    "httpx>=0.27",  # starlette TestClient transport for tests/test_api.py
 ]
 
 [project.scripts]
