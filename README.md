@@ -69,6 +69,25 @@ flowchart LR
 
 ---
 
+## Mining: footprint vs permit (`/mining`)
+
+The same engine points at a different government record. Instead of DPWH contracts, it reads the Mines and Geosciences Bureau's approved mining tenements, the official permit boundaries, and compares them against what each mine has actually cleared from space.
+
+For the largest active tenements, the `/mining` surface shows the share of the approved area that reads as cleared or disturbed ground in Sentinel-2, and how that footprint grew. The boundaries come from MGB's public ArcGIS Online feature services (617 approved tenements with permit number, type, commodity, approval and expiration dates, area, and operator); the global mining-concession datasets (Resource Watch, Global Forest Watch) carry no Philippine coverage, so the boundary has to come from MGB directly.
+
+The lead is the measurement: how much of a permit has been cleared. A second, deliberately conservative layer flags bare ground in a 2 km ring that sits outside every approved tenement and pending application near an active mine, and that grew over the measured window. Bare ground from 10m optical also reads as processing plants, ports, towns, and silted riverbeds, so a flag is a prompt to verify against the before/after imagery shown on the card, never an accusation. Mining is legal inside an approved tenement.
+
+```bash
+# Boundaries + footprint (needs a GEE service-account key; falls back to the boundary layer only)
+GHOSTWATCH_EE_KEY=<key.json> python3 scripts/bake_mining.py --top 25 --thumbs 8
+python3 scripts/verify_mining.py          # compute-before-narrate gate
+#   -> web/public/data/mining/{operators.json, summary.json, operators.csv, tenements.geojson}
+```
+
+Detection uses Sentinel-2 surface reflectance over a 2-year median (NDVI and Bare Soil Index), with the permit-versus-reality comparison and the all-boundaries subtraction done on the authoritative MGB polygons. Caveats are stated on the surface: footprint conflates mining with other cleared ground, tenements lapse and transfer, and the optical record over the cloudy Philippines starts the reliable baseline around 2019. The per-mine numbers download as `operators.csv`.
+
+---
+
 ## Installation
 
 ```bash
