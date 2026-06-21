@@ -1,0 +1,15 @@
+{
+  "built_at": "2026-06-21T00:59:54.771374+00:00",
+  "source": "MGB approved mining tenements (ArcGIS Online, public) + Sentinel-2 SR (Copernicus)",
+  "before_window": "2019-2020",
+  "after_window": "2024-2025",
+  "operators_analyzed": 25,
+  "total_permit_ha": 180517.4,
+  "earth_engine": true,
+  "disclaimer": "Statistical indicators derived from public data. Patterns may have legitimate explanations.",
+  "total_footprint_ha": 7695.0,
+  "median_pct_cleared": 2.1,
+  "operators_flagged": 1,
+  "total_overrun_flag_ha": 244.4,
+  "flag_rule": "active mine (inside footprint >= 100.0 ha) with unpermitted bare ground >= 25.0 ha that grew >= 10.0 ha since 2019"
+}
