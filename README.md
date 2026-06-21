@@ -86,6 +86,10 @@ python3 scripts/verify_mining.py          # compute-before-narrate gate
 
 Detection uses Sentinel-2 surface reflectance over a 2-year median (NDVI and Bare Soil Index), with the permit-versus-reality comparison and the all-boundaries subtraction done on the authoritative MGB polygons. Caveats are stated on the surface: footprint conflates mining with other cleared ground, tenements lapse and transfer, and the optical record over the cloudy Philippines starts the reliable baseline around 2019. The per-mine numbers download as `operators.csv`.
 
+Related work shows the pieces separately: global datasets map mine footprints worldwide (Maus et al. 2022) and mining concessions for some countries, and advocacy groups document Philippine permit-boundary violations case by case. What the `/mining` surface adds is the per-operator comparison of footprint against the MGB-approved boundary, computed and reproducible, for the country the global concession layers leave out.
+
+Tenement boundaries are derived from MGB public records (Executive Order No. 2, s. 2016, Freedom of Information), simplified for display. This is not an official MGB product; the boundary layer is shown so the comparison can be checked against the source.
+
 ---
 
 ## Installation
