@@ -86,8 +86,9 @@ function VerifyContent() {
     }
   }, []);
 
+  // dvh, not vh: a mobile URL bar resizes the viewport and vh does not follow it.
   return (
-    <div className="flex flex-col pt-14 md:h-screen md:flex-row md:overflow-hidden">
+    <div className="flex flex-col pt-14 md:h-[100dvh] md:flex-row md:overflow-hidden">
       {/* List column */}
       <div
         className="flex w-full shrink-0 flex-col border-b md:w-[340px] md:border-b-0 md:border-r"
