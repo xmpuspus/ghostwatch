@@ -329,7 +329,7 @@ The confidence threshold for `no_change` flags defaults to 0.70. This intentiona
 | Capability | GhostWatch | Manual audit | OpenStreetMap | EODAG / GEE community |
 |---|---|---|---|---|
 | Scale | 248K projects automated | < 1% by hand | Community-mapped, incomplete | Generic data access, no analysis |
-| Cost per site | Near-zero (GEE free tier) | $500–$5,000 | Volunteer hours | API cost only |
+| Cost per site | Near-zero (GEE free tier) | $500 to $5,000 | Volunteer hours | API cost only |
 | Satellite analysis | Built-in (NDBI, NDVI, BSI) | Field inspection | None | Bring your own |
 | Before/after comparison | Automated 90-day composites | Manual photography | None | Manual |
 | Philippines DPWH (248K) | Pre-built adapter | Spreadsheet import | Partial | None |
