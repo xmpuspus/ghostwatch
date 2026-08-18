@@ -102,9 +102,9 @@ export const STRINGS = {
     floodsKicker: "Habagat, 06 to 13 August 2026 · PAGASA and PhilSA",
     floodsTitle: "The districts that flooded in August 2026, and the flood control built there",
     floodsSub:
-      "PAGASA put the southwest monsoon over Ilocos, Cagayan Valley, Abra, Benguet and Zambales from 6 to 13 August 2026, and PhilSA mapped the flood extent from Sentinel-1 radar. These are the DPWH engineering districts inside that area, with what the satellite shows at each completed flood-control site.",
-    floodsStatDistricts: "districts in the flood area",
-    floodsStatProjects: "flood-control sites",
+      "PAGASA put the southwest monsoon over Ilocos, Cagayan Valley, Abra, Benguet and Zambales from 6 to 13 August 2026, and PhilSA mapped the flood extent from Sentinel-1 radar. These are the DPWH engineering districts in those provinces, with what the satellite shows at each completed flood-control site in them.",
+    floodsStatDistricts: "districts the monsoon hit",
+    floodsStatProjects: "flood-control sites in them",
     floodsStatNotVisible: "no construction visible",
     floodsStatValue: "value, no construction visible",
     floodsColDistrict: "District",
@@ -118,7 +118,7 @@ export const STRINGS = {
     floodsSourceLink: "PhilSA flood maps",
     floodsSourceTail: "Project records from the public DPWH transparency dataset.",
     floodsMeasuredNote:
-      "These sites were checked for visible construction, never for flood performance. No number on this page says a project failed.",
+      "Sites are matched by DPWH engineering district, never against the mapped water itself, so a site here sits in a district the monsoon hit and not necessarily under the flood. They were checked for visible construction, never for flood performance. No number on this page says a project failed.",
     floodsDisclaimer:
       "The overlap is geographic. It is not a claim that any project failed. Engineers build flood control to a return-period standard, a 200 mm day beats most of them by design, and a dike moves water downstream on purpose. These reads answer whether construction is visible, never whether it worked.",
     dataAsOf: "DPWH record as of",
@@ -187,8 +187,8 @@ export const STRINGS = {
     floodsTitle: "Ang mga distritong binaha noong Agosto 2026, at ang flood control na itinayo doon",
     floodsSub:
       "Ayon sa PAGASA, tumama ang habagat sa Ilocos, Cagayan Valley, Abra, Benguet at Zambales mula 6 hanggang 13 Agosto 2026, at minapa ng PhilSA ang lawak ng baha gamit ang Sentinel-1 radar. Ito ang mga distrito ng inhinyeriya ng DPWH sa loob ng lugar na iyon, kasama ang ipinapakita ng satellite sa bawat natapos na proyekto sa flood control.",
-    floodsStatDistricts: "distrito sa lugar ng baha",
-    floodsStatProjects: "sityo ng flood control",
+    floodsStatDistricts: "distritong tinamaan ng habagat",
+    floodsStatProjects: "sityo ng flood control sa loob",
     floodsStatNotVisible: "walang nakikitang konstruksiyon",
     floodsStatValue: "halaga, walang nakikitang konstruksiyon",
     floodsColDistrict: "Distrito",
@@ -202,7 +202,7 @@ export const STRINGS = {
     floodsSourceLink: "Mga mapa ng baha ng PhilSA",
     floodsSourceTail: "Talaan ng proyekto mula sa pampublikong DPWH transparency dataset.",
     floodsMeasuredNote:
-      "Ang mga sityong ito ay sinuri kung may nakikitang konstruksiyon, hindi kung gumana laban sa baha. Walang numero rito na nagsasabing bumagsak ang isang proyekto.",
+      "Ang mga sityo ay tinutugma ayon sa distrito ng inhinyeriya ng DPWH, hindi laban sa nakamapang tubig mismo, kaya ang sityo rito ay nasa distritong tinamaan ng habagat at hindi tiyak na nasa ilalim ng baha. Sinuri ang mga ito kung may nakikitang konstruksiyon, hindi kung gumana laban sa baha. Walang numero rito na nagsasabing bumagsak ang isang proyekto.",
     floodsDisclaimer:
       "Heograpiko lamang ang pagkakapatong. Hindi ito paratang na bumagsak ang anumang proyekto. Ang flood control ay itinatayo ayon sa pamantayan ng return period, ang 200 mm na ulan sa isang araw ay lampas na sa disenyo ng karamihan, at ang dike ay talagang naglilipat ng tubig pababa. Ang basang ito ay tungkol sa kung nakikita ang konstruksiyon, hindi kung gumana ito.",
     dataAsOf: "Talaan ng DPWH noong",

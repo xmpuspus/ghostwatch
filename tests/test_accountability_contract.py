@@ -177,6 +177,13 @@ def test_flood_disclaimer_refuses_the_did_it_work_reading():
     assert "not a claim that any project failed" in text
 
 
+def test_flood_disclaimer_says_the_match_is_administrative():
+    """The join is a district-name match, never a spatial one against the mapped
+    water. The page must not let "in the flood area" stand for that."""
+    text = floods()["disclaimer"].lower()
+    assert "geographic" in text
+
+
 def test_flood_districts_sit_in_the_regions_the_monsoon_covered():
     """Province names repeat across the country. Matching on the name alone put
     Cagayan de Oro City (Region X) and Isabela City (Region IX) on this page."""
