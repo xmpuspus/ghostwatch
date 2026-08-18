@@ -58,7 +58,7 @@ GeoJSON FeatureCollections wrapped in `{"data": ..., "meta": ...}`. `highlights.
 
 The Sentinel-2 case gallery. Each case carries before/after composite PNGs (`satellite_url_before/after`), dates, index deltas, and a classification.
 
-Cases come from flood control. They use the same 500m buffer and the same before/after windows as the classification behind the map. Even so, the two passes pick the same tier only 13 times out of 42, so each case carries `map_tier` as well and the card prints both when they differ.
+Cases come from flood control. They use the same 500m buffer and the same before/after windows as the classification behind the map. Even so, the two passes pick the same tier only 13 times out of 42. So each case carries `map_tier` too, and the card prints both when they differ.
 
 `is_limit_case` marks the handful of bridges the gallery keeps on purpose. A narrow span sits below 10m. A blank read there marks the method's limit, and it is no finding.
 
@@ -68,11 +68,11 @@ These feed the before/after slider. Every other project opens the Esri Wayback h
 
 The nine firms whose contractor licences PCAB revoked on 2025-09-01, under Resolution 075, s. 2025.
 
-`data.totals` carries the portfolio in aggregate, and every total counts a contract once. A joint venture appears on both partners' cards, which is right per firm and wrong in a sum, so the per-firm numbers add up to more than the totals.
+`data.totals` carries the portfolio in aggregate, and every total counts a contract once. A joint venture appears on both partners' cards. That is right per firm and wrong in a sum, so the per-firm numbers add up to more than the totals.
 
-`data.firms[]` carries one record per firm: `contracts`, `value`, `flood_control_contracts`, `assessed`, a `tiers` breakdown, and `projects[]`. That last list holds the completed flood-control sites that carry a map tier. `assessed` excludes the `UNVERIFIED` tier, because that tier means the imagery could not be read.
+`data.firms[]` carries one record per firm: `contracts`, `value`, `flood_control_contracts`, `assessed`, a `tiers` breakdown, and `projects[]`. That last list holds completed flood-control sites with a map tier. `assessed` excludes the `UNVERIFIED` tier, because that tier means the imagery could not be read.
 
-`data.totals.baseline` is the load-bearing field. It carries `firm_not_visible_rate` and `site_not_visible_rate`, plus the same pair for the visible tier. The page prints the comparison above the counts. Without it a reader takes a red count next to nine named firms as evidence against them, and the measurement does not support that: these firms read no-construction-visible at 1.65 percent against 2.25 percent nationally.
+`data.totals.baseline` is the load-bearing field. It carries `firm_not_visible_rate` and `site_not_visible_rate`, plus the same pair for the visible tier. The page prints the comparison above the counts. Without it a reader takes a red count next to nine named firms as evidence against them. The measurement does not support that. These firms read no-construction-visible at 1.65 percent against 2.25 percent nationally.
 
 The bake matches contracts on the PCAB registration number inside the DPWH `contractor` string. So a joint venture counts for both partners.
 
@@ -86,7 +86,7 @@ DPWH engineering districts inside the area PAGASA and PhilSA reported as flooded
 
 `data.event` cites the source and its URL. `data.districts[]` carries per-district counts and the `sites[]` that read `NOT_VISIBLE`. Every site is `COMPLETED`, because the method says nothing about a project that is not built yet.
 
-The match is administrative. A site qualifies because its DPWH engineering district sits in a province a cited source names, and nothing here tests its coordinates against the mapped water.
+The match is administrative. A site qualifies because its DPWH engineering district sits in a province a cited source names. Nothing here tests its coordinates against the mapped water.
 
 The overlap is geographic. It is not a claim that any project failed. Engineers build flood control to a return-period standard, a 200 mm day beats most of it by design, and a dike moves water downstream on purpose.
 
