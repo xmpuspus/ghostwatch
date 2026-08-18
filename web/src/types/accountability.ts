@@ -27,6 +27,13 @@ export interface RevokedFirm {
   projects: RevokedFirmProject[];
 }
 
+export interface RevokedBaseline {
+  firm_not_visible_rate: number;
+  site_not_visible_rate: number;
+  firm_verified_rate: number;
+  site_verified_rate: number;
+}
+
 export interface RevokedTotals {
   firms: number;
   contracts: number;
@@ -37,6 +44,9 @@ export interface RevokedTotals {
   not_visible: number;
   verified: number;
   not_visible_value: number;
+  // Without this the red count reads as evidence against the nine firms, and it
+  // does not support that. The page prints the comparison above the counts.
+  baseline: RevokedBaseline;
 }
 
 export interface ContractorsDoc {

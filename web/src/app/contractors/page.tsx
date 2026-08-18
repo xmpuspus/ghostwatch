@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { api } from "@/lib/api";
-import { formatCompact, formatNumber, VERIFICATION_COLORS } from "@/lib/constants";
+import { formatCompact, formatNumber, formatPercent, VERIFICATION_COLORS } from "@/lib/constants";
 import { STRINGS, useLang, type Strings } from "@/lib/lang";
 import Footer from "@/components/layout/Footer";
 import type { ContractorsDoc, RevokedFirm } from "@/types/accountability";
@@ -51,7 +51,7 @@ export default function ContractorsPage() {
               color: "var(--color-text-secondary)",
             }}
           >
-            The contractor record failed to load. Reload to retry.
+            {t.contractorsLoadFail}
           </div>
         )}
 
@@ -67,19 +67,52 @@ export default function ContractorsPage() {
           </div>
         )}
 
+        {/* Rides directly under the tiles. The tile row gets screenshotted next
+            to the page title, and the two tiles count different populations. */}
         {totals && (
           <p className="mt-2 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-            {formatNumber(totals.flood_control_contracts)} flood-control contracts worth{" "}
-            {formatCompact(totals.flood_control_value)} · {formatNumber(totals.assessed)} of them
-            checked against Sentinel-2 · {formatNumber(totals.verified)} show construction ·{" "}
-            {formatNumber(totals.not_visible)} show none, worth {formatCompact(totals.not_visible_value)}
+            {t.contractorsMeasuredNote}
+          </p>
+        )}
+
+        {/* The number that decides whether this page is fair. The satellite record
+            on these nine firms is not worse than the national one, and a reader
+            who sees the red tile without this sentence takes the opposite away. */}
+        {totals?.baseline && (
+          <div
+            className="mt-6 rounded px-4 py-3 text-[12px] leading-relaxed"
+            style={{
+              backgroundColor: "rgba(45,212,191,0.06)",
+              border: "1px solid var(--color-accent)",
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            {t.contractorsBaseline(
+              formatPercent(totals.baseline.firm_not_visible_rate * 100, 2),
+              formatPercent(totals.baseline.site_not_visible_rate * 100, 2),
+              formatPercent(totals.baseline.firm_verified_rate * 100, 2),
+              formatPercent(totals.baseline.site_verified_rate * 100, 2),
+            )}
+          </div>
+        )}
+
+        {totals && (
+          <p className="mt-4 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+            {t.contractorsRecap(
+              formatNumber(totals.flood_control_contracts),
+              formatCompact(totals.flood_control_value),
+              formatNumber(totals.assessed),
+              formatNumber(totals.verified),
+              formatNumber(totals.not_visible),
+              formatCompact(totals.not_visible_value),
+            )}
           </p>
         )}
 
         <div
-          className="mt-6 rounded px-4 py-3 text-[12px] leading-relaxed"
+          className="mt-4 rounded px-4 py-3 text-[12px] leading-relaxed"
           style={{
-            backgroundColor: "rgba(45,212,191,0.06)",
+            backgroundColor: "var(--color-surface)",
             border: "1px solid var(--color-border)",
             color: "var(--color-text-secondary)",
           }}
@@ -104,7 +137,7 @@ export default function ContractorsPage() {
         </p>
         {doc && (
           <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
-            Source: {doc.data.source}. Contract records from the public DPWH transparency dataset.
+            {t.contractorsSourceLine(doc.data.source)}
           </p>
         )}
       </div>
@@ -185,7 +218,7 @@ function FirmCard({
           <p className="instrument-label mb-2">{t.contractorsSitesTitle}</p>
           {firm.projects.length === 0 ? (
             <p className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-              No completed flood-control site by this firm carries a clear satellite read.
+              {t.contractorsNoSites}
             </p>
           ) : (
             <ul className="divide-y" style={{ borderColor: "var(--color-border-subtle)" }}>

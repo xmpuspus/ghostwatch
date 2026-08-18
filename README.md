@@ -20,7 +20,7 @@ GhostWatch is an open-source tool. Point it at a government's infrastructure rec
 
 At 10-meter resolution, free optical satellite picks up construction on large footprints (cleared ground, new built-up) but cannot resolve thin or small structures. As a plain built-or-not test it reads absent far too often: run as a binary check on completed flood-control projects, it returns no signal on two-thirds to four-fifths of them, because most flood-control work (concrete on an already-bare riverbank) barely moves the built-up index. So the map does not use that raw call. Every assessed project gets a continuous absence score, and only the strongest tail (completed projects where the built-up index actually held flat or fell) is shown in red as no construction visible: 480 of 21,356 assessed flood-control projects, about 2 percent, a deliberately conservative cut. The opposite tail, 549 projects showing clear new clearing and built-up, is marked construction visible; the rest is partial or inconclusive. No construction visible is a prompt to look, not a verdict: many of these sites were genuinely built but sit below what 10m can resolve, which is why every project also opens an on-demand historical before/after from the Esri World Imagery Wayback archive (2014 to today) to inspect by eye.
 
-One more limit, and we measured it. The case gallery re-measures every site it shows. A second code path reads the same archive at the same 10m scale, over the same 500m circle and the same windows. On 42 completed flood-control sites the two passes picked the same tier 13 times. They agreed on the coarser question, whether any construction signal appeared at all, 24 times. The median gap between their built-up index deltas was 0.12, wider than the 0.16 band the whole absence score spans.
+One more limit, and we measured it. The case gallery re-measures every site it shows. A second code path reads the same archive at the same 10m scale, over the same 500m circle and the same windows. On 42 completed flood-control sites the two passes picked the same tier 13 times. They agreed on the coarser question, whether any construction signal appeared at all, 24 times. The median gap between their built-up index deltas was 0.12, which covers three quarters of the 0.16 band the whole absence score spans.
 
 So on a single site the tier is not a measurement but a reading, and a second careful pass can move it. Every case shows its own before and after image. The map states no verdict. A gallery card prints both tiers whenever they disagree. Read the aggregate as the finding, and any one marker as a place to go and look.
 
@@ -83,11 +83,13 @@ On 1 September 2025, under Resolution 075 s. 2025, the Philippine Contractors Ac
 
 The join runs on the PCAB registration number inside the DPWH contractor string. It never uses the firm name, and never the record's own `[REVOKED]` marker. Two reasons. A registration number survives a rename and credits both partners in a joint venture. And the marker is a **current** registry status, stamped backward onto historical rows. DPWH applies it unevenly. Elite (49128) and YPR (45002) carry no marker, although PCAB revoked both.
 
+The page leads not with the count but with the comparison. Across their assessed flood-control sites these nine firms show no construction at 1.65 percent, against 2.25 percent for every assessed site in the country. Construction is visible at 3.31 percent of theirs against 2.57 percent nationally. On this measure the satellite record for these firms is no worse than the national picture, and the counts are not evidence against them. Publishing the count without that sentence would be the accusation this project exists to avoid.
+
 A revoked licence is an administrative act about a firm. It is not a finding about any project on the page, and the page says so in its own words before it lists anything.
 
 ## Floods: what was built where the water went (`/floods`)
 
-PAGASA put the southwest monsoon over Ilocos, Cagayan Valley, Abra, Benguet and Zambales from 6 to 13 August 2026. PhilSA mapped the flood extent from Sentinel-1 radar. The `/floods` surface lists the DPWH engineering districts inside that area. For each one it shows what the satellite sees at every completed flood-control site.
+PAGASA put the southwest monsoon over Ilocos, Cagayan Valley, Abra, Benguet and Zambales from 6 to 13 August 2026. PhilSA mapped the flood extent from Sentinel-1 radar. The `/floods` surface lists the 25 DPWH engineering districts inside that area. For each one it shows what the satellite sees at every completed flood-control site. A district only appears when a cited source names its province, so provinces that merely share a region with Abra stay off the page.
 
 The overlap is geographic, and the page refuses the stronger reading out loud. Engineers build flood control to a return-period standard. A 200 mm day beats most of it by design, and a dike moves water downstream on purpose. So a flood near a completed project proves nothing about that project. These reads answer whether construction is visible, never whether it worked.
 
@@ -230,10 +232,10 @@ ghostwatch fetch --adapter philippines --output data/raw
 ### Launch the full web dashboard
 
 ```bash
-# Terminal 1 — API
+# Terminal 1: API
 ghostwatch serve --host 0.0.0.0 --port 8000
 
-# Terminal 2 — Frontend
+# Terminal 2: Frontend
 cd web && npm run dev
 # Open http://localhost:3000
 ```
@@ -256,7 +258,7 @@ adapter = PhilippinesAdapter()
 df = adapter.parse(Path("data/raw/dpwh/dpwh_projects.parquet"))
 
 # Completed projects grouped by region (satellite flags come from the
-# verification pipeline, not the raw record — see scripts/calibrate_classifier.py)
+# verification pipeline, not the raw record, see scripts/calibrate_classifier.py)
 completed = df[df["status"] == "completed"]
 
 by_region = (
@@ -294,7 +296,7 @@ GhostWatch uses Sentinel-2 Level-2A (surface reflectance) composites via Google 
 
 | Index | Formula | What it measures |
 |-------|---------|-----------------|
-| **NDBI** | `(SWIR − NIR) / (SWIR + NIR)` | Impervious surfaces — concrete, asphalt, roofing. Increases when built-up area expands. |
+| **NDBI** | `(SWIR − NIR) / (SWIR + NIR)` | Impervious surfaces: concrete, asphalt, roofing. Increases when built-up area expands. |
 | **NDVI** | `(NIR − Red) / (NIR + Red)` | Vegetation density. Decreases when land is cleared or paved. |
 | **BSI** | `((SWIR + Red) − (NIR + Blue)) / ((SWIR + Red) + (NIR + Blue))` | Exposed bare earth. Elevated during site clearing and excavation. |
 
@@ -579,7 +581,7 @@ ghostwatch/
 │   ├── config.py                # Pydantic Settings (GhostWatchSettings)
 │   ├── core/
 │   │   ├── classifier.py        # ChangeClass, classify_change(), is_ghost_project()
-│   │   ├── collector.py         # SatelliteCollector — GEE integration
+│   │   ├── collector.py         # SatelliteCollector: GEE integration
 │   │   ├── indices.py           # compute_ndbi(), compute_ndvi(), compute_bsi()
 │   │   └── exporter.py          # GEE thumbnail URLs + image downloads
 │   └── adapters/
@@ -616,7 +618,7 @@ ghostwatch/
 |--------|-------------|--------|
 | **DPWH Transparency Data** | 248,220 Philippine DPWH infrastructure contracts with coordinates, contractors, amounts, and dates | [bettergovph/dpwh-transparency-data](https://huggingface.co/datasets/bettergovph/dpwh-transparency-data) on HuggingFace |
 | **Sentinel-2 Level-2A** | ESA multispectral imagery, 10-meter resolution, ~5-day revisit, surface reflectance | Google Earth Engine (`COPERNICUS/S2_SR_HARMONIZED`) |
-| **Google Earth Engine** | Cloud-based geospatial analysis — composite generation, band math, export | [earthengine.google.com](https://earthengine.google.com) (free for research) |
+| **Google Earth Engine** | Cloud-based geospatial analysis, composite generation, band math, export | [earthengine.google.com](https://earthengine.google.com) (free for research) |
 
 All data used by GhostWatch is publicly available. No proprietary or restricted datasets are required.
 
@@ -644,7 +646,7 @@ ruff format .
 # Frontend
 cd web
 npm install
-npm run dev       # Development server — port 3000
+npm run dev       # Development server on port 3000
 npm run build     # Production build
 npm run lint      # ESLint
 
@@ -665,7 +667,7 @@ pytest --cov=ghostwatch tests/      # With coverage
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
 
 ---
 

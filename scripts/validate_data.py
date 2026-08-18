@@ -129,13 +129,48 @@ def check_contractors(doc: dict, highlights: list[dict]) -> None:
     if totals.get("firms") != len(firms):
         err(f"contractors.json: totals.firms={totals.get('firms')} != {len(firms)} firm records")
 
-    for key, derived in (
+    # Totals count each contract once; per-firm records credit a joint venture to
+    # both partners. So a total must never EXCEED the per-firm sum, and it must
+    # never exceed the population it is drawn from.
+    for key, per_firm in (
         ("assessed", sum(f["assessed"] for f in firms)),
         ("not_visible", sum(f["tiers"].get("NOT_VISIBLE", 0) for f in firms)),
         ("verified", sum(f["tiers"].get("VERIFIED", 0) for f in firms)),
     ):
-        if totals.get(key) != derived:
-            err(f"contractors.json: totals.{key}={totals.get(key)} != {derived} from firm records")
+        if totals.get(key, 0) > per_firm:
+            err(f"contractors.json: totals.{key}={totals.get(key)} exceeds per-firm sum {per_firm}")
+    if totals.get("assessed", 0) > totals.get("flood_control_contracts", 0):
+        err(
+            f"contractors.json: {totals.get('assessed')} assessed exceeds "
+            f"{totals.get('flood_control_contracts')} flood-control contracts"
+        )
+    if totals.get("contracts", 0) > sum(f["contracts"] for f in firms):
+        err("contractors.json: totals.contracts exceeds the per-firm sum")
+
+    # The page prints money. A peso total nobody re-derives is a number nobody checks.
+    per_firm_value = sum(f["value"] for f in firms)
+    if not (0 < totals.get("value", 0) <= per_firm_value + 1):
+        err(
+            f"contractors.json: totals.value {totals.get('value')} sits outside "
+            f"(0, per-firm sum {per_firm_value}]"
+        )
+    listed_nv_value = sum(
+        p["contract_amount"] or 0
+        for f in firms
+        for p in f["projects"]
+        if p["verification_status"] == "NOT_VISIBLE"
+    )
+    if totals.get("not_visible_value", 0) > listed_nv_value + 1:
+        err(
+            f"contractors.json: not_visible_value {totals.get('not_visible_value')} exceeds "
+            f"the sum of the listed red projects {listed_nv_value}"
+        )
+
+    # Without the baseline the red count reads as evidence against these firms.
+    base = totals.get("baseline") or {}
+    for key in ("firm_not_visible_rate", "site_not_visible_rate"):
+        if not isinstance(base.get(key), (int, float)):
+            err(f"contractors.json: baseline.{key} missing — the page cannot state the comparison")
 
     # The card prints a tier COUNT from `tiers` and a money figure summed from
     # `projects`. A NOT_VISIBLE project with no coordinates never reaches

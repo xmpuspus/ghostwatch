@@ -199,7 +199,7 @@ export default function HeroSection() {
           <Entry
             href="/floods"
             kicker="Habagat, 6 to 13 August 2026"
-            title="The districts that flooded this month, and the flood control built there"
+            title="The districts that flooded in August 2026, and the flood control built there"
           />
           <Entry
             href="/contractors"

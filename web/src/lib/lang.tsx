@@ -72,10 +72,16 @@ export const STRINGS = {
     contractorsTitle: "Nine firms lost their licences. Their sites are still on the map.",
     contractorsSub:
       "On 1 September 2025 the Philippine Contractors Accreditation Board revoked the contractor licences of nine firms. This page holds every DPWH contract in the public record that those firms won, and what free Sentinel-2 imagery shows at their completed flood-control sites.",
+    contractorsBaseline: (firmRate: string, siteRate: string, firmVis: string, siteVis: string) =>
+      `Read this before the counts below. Across their assessed flood-control sites these nine firms show no construction at ${firmRate}, against ${siteRate} for every assessed site in the country. Construction is visible at ${firmVis} of theirs against ${siteVis} nationally. On this measure the satellite record for these firms is no worse than the national picture, and the counts below are not evidence against them.`,
+    contractorsMeasuredNote:
+      "Contract value covers every DPWH category. The red count covers completed flood-control sites only, so the two tiles do not share a denominator.",
     contractorsStatFirms: "firms struck off",
     contractorsStatContracts: "DPWH contracts",
     contractorsStatValue: "contract value",
     contractorsStatNotVisible: "no construction visible",
+    contractorsRecap: (fc: string, fcValue: string, assessed: string, vis: string, nv: string, nvValue: string) =>
+      `${fc} flood-control contracts worth ${fcValue}. ${assessed} of them carry a satellite read: ${vis} show construction, ${nv} show none, worth ${nvValue}.`,
     contractorsColContracts: "Contracts",
     contractorsColValue: "Value",
     contractorsColFlood: "Flood control",
@@ -87,10 +93,14 @@ export const STRINGS = {
       "A revoked licence is an administrative act about a firm. It is not a finding about any project on this page. The satellite reads mean what they mean on the map: no construction visible is a prompt to look closer, never proof a project is missing.",
     contractorsSitesTitle: "Completed flood-control sites, checked from space",
     contractorsOpenMap: "Open on the map",
+    contractorsLoadFail: "The contractor record failed to load. Reload to retry.",
+    contractorsNoSites: "No completed flood-control site by this firm carries a clear satellite read.",
+    contractorsSourceLine: (source: string) =>
+      `Source: ${source}. Contract records from the public DPWH transparency dataset.`,
 
     floodsNav: "Floods",
     floodsKicker: "Habagat, 06 to 13 August 2026 · PAGASA and PhilSA",
-    floodsTitle: "The districts that flooded this month, and the flood control built there",
+    floodsTitle: "The districts that flooded in August 2026, and the flood control built there",
     floodsSub:
       "PAGASA put the southwest monsoon over Ilocos, Cagayan Valley, Abra, Benguet and Zambales from 6 to 13 August 2026, and PhilSA mapped the flood extent from Sentinel-1 radar. These are the DPWH engineering districts inside that area, with what the satellite shows at each completed flood-control site.",
     floodsStatDistricts: "districts in the flood area",
@@ -101,6 +111,12 @@ export const STRINGS = {
     floodsColProjects: "Sites",
     floodsColNotVisible: "No construction visible",
     floodsColValue: "Value",
+    floodsNoRedSites: (n: string) =>
+      `No completed site in this district reads as no construction visible. Of its ${n} flood-control sites the rest read as visible, partial, or too unclear to call, and this list holds only the red ones.`,
+    floodsLoadFail: "The flood-district record failed to load. Reload to retry.",
+    floodsSourceLine: (source: string) => `Flood extent: ${source}.`,
+    floodsSourceLink: "PhilSA flood maps",
+    floodsSourceTail: "Project records from the public DPWH transparency dataset.",
     floodsMeasuredNote:
       "These sites were checked for visible construction, never for flood performance. No number on this page says a project failed.",
     floodsDisclaimer:
@@ -140,10 +156,16 @@ export const STRINGS = {
     contractorsTitle: "Siyam na kompanya ang nawalan ng lisensiya. Nasa mapa pa rin ang mga sityo nila.",
     contractorsSub:
       "Noong 1 Setyembre 2025, binawi ng Philippine Contractors Accreditation Board ang lisensiya ng siyam na kompanya. Nasa pahinang ito ang bawat kontrata ng DPWH sa pampublikong talaan na napanalunan ng mga kompanyang iyon, at kung ano ang ipinapakita ng libreng Sentinel-2 imagery sa kanilang mga natapos na proyekto sa flood control.",
+    contractorsBaseline: (firmRate: string, siteRate: string, firmVis: string, siteVis: string) =>
+      `Basahin ito bago ang mga bilang sa ibaba. Sa kanilang mga nasuring proyekto sa flood control, walang nakikitang konstruksiyon sa ${firmRate}, laban sa ${siteRate} para sa bawat nasuring sityo sa buong bansa. May nakikitang konstruksiyon sa ${firmVis} ng kanila laban sa ${siteVis} sa buong bansa. Sa sukat na ito, ang talaan ng satellite para sa mga kompanyang ito ay hindi mas masahol kaysa sa pambansang larawan, at ang mga bilang sa ibaba ay hindi katibayan laban sa kanila.`,
+    contractorsMeasuredNote:
+      "Ang halaga ng kontrata ay sumasaklaw sa bawat kategorya ng DPWH. Ang pulang bilang ay para lamang sa natapos na proyekto sa flood control, kaya hindi pareho ang batayan ng dalawang tile.",
     contractorsStatFirms: "kompanyang binawian",
     contractorsStatContracts: "kontrata sa DPWH",
     contractorsStatValue: "halaga ng kontrata",
     contractorsStatNotVisible: "walang nakikitang konstruksiyon",
+    contractorsRecap: (fc: string, fcValue: string, assessed: string, vis: string, nv: string, nvValue: string) =>
+      `${fc} kontrata sa flood control na nagkakahalaga ng ${fcValue}. ${assessed} rito ang may basa ng satellite: ${vis} ang may nakikitang konstruksiyon, ${nv} ang wala, nagkakahalaga ng ${nvValue}.`,
     contractorsColContracts: "Kontrata",
     contractorsColValue: "Halaga",
     contractorsColFlood: "Flood control",
@@ -155,10 +177,14 @@ export const STRINGS = {
       "Ang pagbawi ng lisensiya ay hakbang administratibo tungkol sa kompanya. Hindi ito hatol sa anumang proyekto sa pahinang ito. Ang basa ng satellite ay may parehong kahulugan tulad sa mapa: ang walang nakikitang konstruksiyon ay paanyaya na tumingin, hindi patunay na nawawala ang proyekto.",
     contractorsSitesTitle: "Mga natapos na proyekto sa flood control, sinuri mula sa kalawakan",
     contractorsOpenMap: "Buksan sa mapa",
+    contractorsLoadFail: "Hindi na-load ang talaan ng kontratista. I-reload upang subukan muli.",
+    contractorsNoSites: "Walang natapos na proyekto sa flood control ng kompanyang ito ang may malinaw na basa ng satellite.",
+    contractorsSourceLine: (source: string) =>
+      `Pinagmulan: ${source}. Talaan ng kontrata mula sa pampublikong DPWH transparency dataset.`,
 
     floodsNav: "Baha",
     floodsKicker: "Habagat, 06 hanggang 13 Agosto 2026 · PAGASA at PhilSA",
-    floodsTitle: "Ang mga distritong binaha ngayong buwan, at ang flood control na itinayo doon",
+    floodsTitle: "Ang mga distritong binaha noong Agosto 2026, at ang flood control na itinayo doon",
     floodsSub:
       "Ayon sa PAGASA, tumama ang habagat sa Ilocos, Cagayan Valley, Abra, Benguet at Zambales mula 6 hanggang 13 Agosto 2026, at minapa ng PhilSA ang lawak ng baha gamit ang Sentinel-1 radar. Ito ang mga distrito ng inhinyeriya ng DPWH sa loob ng lugar na iyon, kasama ang ipinapakita ng satellite sa bawat natapos na proyekto sa flood control.",
     floodsStatDistricts: "distrito sa lugar ng baha",
@@ -169,6 +195,12 @@ export const STRINGS = {
     floodsColProjects: "Sityo",
     floodsColNotVisible: "Walang nakikitang konstruksiyon",
     floodsColValue: "Halaga",
+    floodsNoRedSites: (n: string) =>
+      `Walang natapos na sityo sa distritong ito ang nababasa bilang walang nakikitang konstruksiyon. Sa ${n} nitong sityo ng flood control, ang iba ay nakikita, bahagya, o hindi malinaw, at ang listahang ito ay para lamang sa mga pula.`,
+    floodsLoadFail: "Hindi na-load ang talaan ng distrito. I-reload upang subukan muli.",
+    floodsSourceLine: (source: string) => `Lawak ng baha: ${source}.`,
+    floodsSourceLink: "Mga mapa ng baha ng PhilSA",
+    floodsSourceTail: "Talaan ng proyekto mula sa pampublikong DPWH transparency dataset.",
     floodsMeasuredNote:
       "Ang mga sityong ito ay sinuri kung may nakikitang konstruksiyon, hindi kung gumana laban sa baha. Walang numero rito na nagsasabing bumagsak ang isang proyekto.",
     floodsDisclaimer:

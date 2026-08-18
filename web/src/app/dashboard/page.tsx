@@ -105,12 +105,18 @@ export default function DashboardPage() {
   const roundedMax = nvMax <= 10 ? 10 : Math.ceil(nvMax / 10) * 10;
   const topRegion = nvRegions[0];
   const topRegionTitle = topRegion
-    ? `${topRegion.region} leads with ${formatNumber(topRegion.count)} sites showing no construction`
+    ? `${topRegion.region} leads with ${formatNumber(topRegion.count)} sites where no construction is visible`
     : "No construction visible, by region";
   // The red tier is about 2% of assessed, and a donut turns that into an
   // unreadable sliver. A sorted bar keeps every count legible next to its label.
   const tierBars = charts?.tier_dist ?? [];
   const tierMax = tierBars.length ? Math.max(...tierBars.map((tb) => tb.value)) : 0;
+  const tierTotal = tierBars.reduce((n, tb) => n + tb.value, 0);
+  const inconclusive = tierBars.find((tb) => tb.tier === "INCONCLUSIVE")?.value ?? 0;
+  const notVisibleTier = tierBars.find((tb) => tb.tier === "NOT_VISIBLE")?.value ?? 0;
+  const tierTitle = tierTotal
+    ? `${formatPercent((inconclusive / tierTotal) * 100, 0)} of assessed sites read inconclusive, ${formatPercent((notVisibleTier / tierTotal) * 100, 1)} read empty`
+    : "What the imagery shows across assessed projects";
   const peakYear = (charts?.yearly ?? []).reduce<{ year: string; not_visible: number } | null>(
     (best, y) => (best === null || y.not_visible > best.not_visible ? y : best),
     null,
@@ -121,7 +127,7 @@ export default function DashboardPage() {
     ? `${formatPercent((topStatus.value / statusCount) * 100, 0)} of mapped projects report ${topStatus.name.toLowerCase()}`
     : "Reported status across mapped DPWH projects";
   const yearlyTitle = peakYear
-    ? `${peakYear.year} funding carries the most unseen value, ₱${peakYear.not_visible.toFixed(1)}B`
+    ? `${peakYear.year} funding holds the most value with no construction visible, ₱${peakYear.not_visible.toFixed(1)}B`
     : "Value with no construction visible, by funding year";
 
   return (
@@ -173,7 +179,7 @@ export default function DashboardPage() {
           <div className="grid gap-6 lg:grid-cols-3">
             <Panel
               className="self-start"
-              title="Most assessed sites read inconclusive, and 2% read empty"
+              title={tierTitle}
               subtitle="What 10m Sentinel-2 shows across every assessed project"
             >
               {!tierBars.length ? (

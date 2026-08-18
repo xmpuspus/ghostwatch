@@ -141,9 +141,14 @@ FLOOD_EVENT = {
         "due-to-tropical-storm-maymay-and-habagat/"
     ),
 }
+# Only provinces a cited source names. PhilSA mapped Regions 1 and 2 plus parts
+# of Abra and Zambales; PAGASA and the news coverage named Benguet, where the
+# landslide deaths happened. Kalinga, Apayao and Mountain Province sit in the
+# same region as Abra and Benguet, and no source puts the water there, so they
+# came off this list.
 FLOOD_DISTRICT_PATTERN = re.compile(
     r"\b(?:Ilocos Norte|Ilocos Sur|La Union|Pangasinan|Abra|Benguet|Zambales|"
-    r"Mountain Province|Kalinga|Apayao|Cagayan|Isabela|Nueva Vizcaya|Quirino)\b",
+    r"Cagayan|Isabela|Nueva Vizcaya|Quirino)\b",
     re.IGNORECASE,
 )
 # The province names above repeat elsewhere in the country, so the name alone
@@ -546,7 +551,10 @@ def build_contractors(full: pd.DataFrame, df: pd.DataFrame) -> dict:
                 "value": float(budget.fillna(0).sum()),
                 "flood_control_contracts": int(len(flood)),
                 "flood_control_value": float(flood_budget.fillna(0).sum()),
-                "assessed": int(sum(tiers.values())),
+                # UNVERIFIED means the imagery could not be read at all, so those
+                # rows are not assessed. Counting them made the card claim 1,397
+                # sites checked when 918 were.
+                "assessed": int(sum(v for k, v in tiers.items() if k != "UNVERIFIED")),
                 "tiers": tiers,
                 "not_visible_value": float(not_visible_value),
                 # The registry marker is missing on some rows, so record whether
@@ -559,10 +567,32 @@ def build_contractors(full: pd.DataFrame, df: pd.DataFrame) -> dict:
         )
     firms.sort(key=lambda f: f["value"], reverse=True)
 
+    # Every total counts each contract ONCE. A joint venture puts one contract on
+    # two firm cards, which is right per firm and wrong in a sum: summing the
+    # cards gave 4,272 contracts against 4,253 real ones, and reported 1,397
+    # flood-control sites checked out of 1,386 that exist.
     all_ids = set(REVOKED_FIRMS)
     matched = full[full["_pcab"].map(lambda s: bool(s & all_ids))]
     mcat = matched["category"].astype(str).str.strip().str.lower()
     mflood = matched[mcat.isin(CLASSIFIED_CATEGORIES)]
+    seen_tiers: dict[str, int] = {}
+    seen_nv_value = 0.0
+    for pid in {str(c) for c in mflood["contractId"]}:
+        tier = tier_by_id.get(pid)
+        if tier is None:
+            continue
+        seen_tiers[tier] = seen_tiers.get(tier, 0) + 1
+        if tier == "NOT_VISIBLE":
+            seen_nv_value += num_or_none(amount_by_id.get(pid)) or 0.0
+    assessed = sum(v for k, v in seen_tiers.items() if k != "UNVERIFIED")
+
+    # The number that decides whether this page is fair. Without it a reader takes
+    # the red count as evidence against these firms, and the comparison does not
+    # support that. Computed here so no one has to trust a hand-typed rate.
+    site_nv = int((df["verification_status"] == "NOT_VISIBLE").sum())
+    site_assessed = int(
+        df["verification_status"].isin(["VERIFIED", "NOT_VISIBLE", "PARTIAL", "INCONCLUSIVE"]).sum()
+    )
     totals = {
         "firms": len(firms),
         "contracts": int(len(matched)),
@@ -571,10 +601,24 @@ def build_contractors(full: pd.DataFrame, df: pd.DataFrame) -> dict:
         "flood_control_value": float(
             pd.to_numeric(mflood["budget"], errors="coerce").fillna(0).sum()
         ),
-        "assessed": sum(f["assessed"] for f in firms),
-        "not_visible": sum(f["tiers"].get("NOT_VISIBLE", 0) for f in firms),
-        "verified": sum(f["tiers"].get("VERIFIED", 0) for f in firms),
-        "not_visible_value": sum(f["not_visible_value"] for f in firms),
+        "assessed": assessed,
+        "not_visible": seen_tiers.get("NOT_VISIBLE", 0),
+        "verified": seen_tiers.get("VERIFIED", 0),
+        "not_visible_value": seen_nv_value,
+        "baseline": {
+            "firm_not_visible_rate": round(seen_tiers.get("NOT_VISIBLE", 0) / assessed, 4)
+            if assessed
+            else 0.0,
+            "site_not_visible_rate": round(site_nv / site_assessed, 4) if site_assessed else 0.0,
+            "firm_verified_rate": round(seen_tiers.get("VERIFIED", 0) / assessed, 4)
+            if assessed
+            else 0.0,
+            "site_verified_rate": round(
+                int((df["verification_status"] == "VERIFIED").sum()) / site_assessed, 4
+            )
+            if site_assessed
+            else 0.0,
+        },
     }
     return envelope(
         {"source": PCAB_RESOLUTION, "totals": totals, "firms": firms},

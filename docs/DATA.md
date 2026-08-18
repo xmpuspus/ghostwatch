@@ -1,6 +1,6 @@
 # Data dictionary
 
-Everything tulaypinoy.ph renders comes from static JSON baked by `scripts/bake_projects.py` and committed under `web/public/data/`. The files are publicly fetchable — journalists and researchers can pull them directly:
+Everything tulaypinoy.ph renders comes from static JSON baked by `scripts/bake_projects.py` and committed under `web/public/data/`. The files are publicly fetchable, journalists and researchers can pull them directly:
 
 ```bash
 curl -O https://tulaypinoy.ph/data/highlights.json   # red/green/amber projects (~4.6 MB)
@@ -22,7 +22,7 @@ GeoJSON FeatureCollections wrapped in `{"data": ..., "meta": ...}`. `highlights.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `id` | string | DPWH `contractId` — the stable key across all files. Deep-link any project at `/map?id=<id>` |
+| `id` | string | DPWH `contractId`, the stable key across all files. Deep-link any project at `/map?id=<id>` |
 | `title` | string | Project description from the DPWH record |
 | `status` | string | `COMPLETED`, `ONGOING`, `FOR_PROCUREMENT`, `TERMINATED`, `NOT_YET_STARTED` |
 | `project_type` | string | `FLOOD_CONTROL` (classified) or `BRIDGE` (context) |
@@ -31,7 +31,7 @@ GeoJSON FeatureCollections wrapped in `{"data": ..., "meta": ...}`. `highlights.
 | `change_class` | string/null | Raw classifier output (`construction_detected`, `no_change`, `partial_construction`, `vegetation_cleared`, `insufficient_data`) |
 | `ndbi_d` | number/null | After-minus-before built-up index delta (the primary evidence) |
 | `ndvi_d` | number/null | Vegetation index delta |
-| `contract_amount` | number/null | Budget in PHP, from the DPWH `budget` column (`amountPaid` is unusable — all zeros upstream) |
+| `contract_amount` | number/null | Budget in PHP, from the DPWH `budget` column (`amountPaid` is unusable, all zeros upstream) |
 | `contractor` | string | Contractor of record |
 | `region`, `district` | string | Administrative location (district holds the province) |
 | `target_completion` | string/null | Reported completion date |
@@ -40,15 +40,15 @@ GeoJSON FeatureCollections wrapped in `{"data": ..., "meta": ...}`. `highlights.
 
 | Tier | Meaning |
 |---|---|
-| `VERIFIED` | Completed project with clear new built-up + clearing signal — construction visible from space |
-| `NOT_VISIBLE` | Completed project whose built-up index stayed flat or fell (absence score >= 0.62) — no construction visible at 10m. A prompt to look, never an accusation |
+| `VERIFIED` | Completed project with clear new built-up + clearing signal, construction visible from space |
+| `NOT_VISIBLE` | Completed project whose built-up index stayed flat or fell (absence score >= 0.62), no construction visible at 10m. A prompt to look, never an accusation |
 | `PARTIAL` | Some construction signal, below the clear-detection bar |
 | `INCONCLUSIVE` | Assessed, ambiguous or weak signal |
 | `UNVERIFIED` | Not assessable (no usable imagery) or context category (bridges) |
 
 ## overview.json
 
-`data` object with headline counters: `total_projects`, `with_coordinates`, `assessed_count`, `not_visible_count`, `not_visible_rate` (% of assessed), `not_visible_value` (PHP), `verified_count`, `total_contractors`, `regions_covered` (geographic regions; the DPWH "Central Office" bucket is excluded), plus a `satellite` sub-object with the tier breakdown. Carries a `disclaimer` string — keep it attached to any reuse.
+`data` object with headline counters: `total_projects`, `with_coordinates`, `assessed_count`, `not_visible_count`, `not_visible_rate` (% of assessed), `not_visible_value` (PHP), `verified_count`, `total_contractors`, `regions_covered` (geographic regions; the DPWH "Central Office" bucket is excluded), plus a `satellite` sub-object with the tier breakdown. Carries a `disclaimer` string, keep it attached to any reuse.
 
 ## charts.json
 
@@ -58,7 +58,7 @@ GeoJSON FeatureCollections wrapped in `{"data": ..., "meta": ...}`. `highlights.
 
 The Sentinel-2 case gallery. Each case carries before/after composite PNGs (`satellite_url_before/after`), dates, index deltas, and a classification.
 
-Cases come from flood control. They use the same 500m buffer and the same before/after windows as the classification behind the map. So a case carries the tier its marker carries.
+Cases come from flood control. They use the same 500m buffer and the same before/after windows as the classification behind the map. Even so, the two passes pick the same tier only 13 times out of 42, so each case carries `map_tier` as well and the card prints both when they differ.
 
 `is_limit_case` marks the handful of bridges the gallery keeps on purpose. A narrow span sits below 10m. A blank read there marks the method's limit, and it is no finding.
 

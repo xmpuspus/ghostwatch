@@ -285,6 +285,10 @@ export default function ProjectMap() {
     const p = projects.find((proj) => proj.id === id);
     if (p) {
       deepLinkDone.current = true;
+      // The map opens on the red tier, so a deep link to an amber or green
+      // project drew no marker: the visitor closed the modal and saw bare
+      // ground where the project should sit. Switch to the tier being linked.
+      setTier(p.verification_status);
       openProject(p, true);
     }
   }, [projects, openProject]);

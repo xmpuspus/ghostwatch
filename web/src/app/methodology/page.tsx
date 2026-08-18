@@ -21,7 +21,7 @@ export default function MethodologyPage() {
           open-source tool: the same pipeline runs on any country&apos;s infrastructure data.
         </p>
 
-        {/* Section index — deep-link anchors for confusion-driven visitors */}
+        {/* Section index , deep-link anchors for confusion-driven visitors */}
         <nav className="mb-10 flex flex-wrap gap-x-4 gap-y-1.5" aria-label="On this page">
           {[
             ["core-insight", "Core insight"],
@@ -230,7 +230,7 @@ export default function MethodologyPage() {
           </p>
         </section>
 
-        {/* Reproducibility — measured, not asserted. This is the least flattering
+        {/* Reproducibility , measured, not asserted. This is the least flattering
             number on the site, so it gets its own section rather than a footnote. */}
         <section id="reproducibility" className="mb-10 scroll-mt-20">
           <h2 className="mb-3 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
@@ -242,7 +242,8 @@ export default function MethodologyPage() {
             windows, same classifier. On 42 completed flood-control sites the two passes landed on
             the same tier 13 times, and agreed on the coarser question, whether any construction
             signal appeared at all, 24 times. The median gap between their built-up index deltas was
-            0.12, which is wider than the 0.16 band the whole absence score is spread across.
+            0.12, which covers three quarters of the 0.16 band the whole absence score is
+            spread across.
           </p>
           <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
             We have not run this to ground. The remaining differences between the two code paths are
@@ -255,7 +256,7 @@ export default function MethodologyPage() {
           </p>
         </section>
 
-        {/* Historical imagery — on-demand Wayback for every bridge */}
+        {/* Historical imagery , on-demand Wayback for every bridge */}
         <section id="historical" className="mb-10 scroll-mt-20">
           <h2 className="mb-3 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
             Historical Imagery for Every Project
@@ -301,7 +302,7 @@ export default function MethodologyPage() {
             <div>After composite:  latest 2 years (2024–2025)</div>
             <div className="mt-2" style={{ color: "var(--color-text-muted)" }}># Filters</div>
             <div>Cloud cover: &lt; 20% (CLOUDY_PIXEL_PERCENTAGE)</div>
-            <div>Buffer: 100m radius around project coordinates</div>
+            <div>Buffer: 500m radius around project coordinates</div>
             <div>Resolution: 10m (Sentinel-2 native)</div>
           </div>
         </section>

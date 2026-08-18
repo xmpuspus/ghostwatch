@@ -74,13 +74,47 @@ def test_every_revoked_firm_carries_a_pcab_number():
         assert re.fullmatch(r"\d+", f["pcab_id"]), f"{f['name']} has no PCAB registration number"
 
 
-def test_contractor_totals_derive_from_firm_records():
+def test_contractor_totals_count_each_contract_once():
+    """A joint venture belongs on both partners' cards and must count once in a
+    total. Summing the cards claimed 4,272 contracts against 4,253 real ones, and
+    reported more flood-control sites checked than exist."""
     data = contractors()["data"]
     firms, totals = data["firms"], data["totals"]
     assert totals["firms"] == len(firms)
-    assert totals["assessed"] == sum(f["assessed"] for f in firms)
-    assert totals["not_visible"] == sum(f["tiers"].get("NOT_VISIBLE", 0) for f in firms)
-    assert totals["verified"] == sum(f["tiers"].get("VERIFIED", 0) for f in firms)
+    assert totals["assessed"] <= sum(f["assessed"] for f in firms)
+    assert totals["not_visible"] <= sum(f["tiers"].get("NOT_VISIBLE", 0) for f in firms)
+    assert totals["verified"] <= sum(f["tiers"].get("VERIFIED", 0) for f in firms)
+    assert totals["contracts"] <= sum(f["contracts"] for f in firms)
+    assert totals["value"] <= sum(f["value"] for f in firms) + 1
+
+
+def test_assessed_never_exceeds_the_contracts_it_is_drawn_from():
+    """The page reads 'N of them carry a satellite read'. N above the population
+    is an impossible sentence, and it shipped once."""
+    totals = contractors()["data"]["totals"]
+    assert totals["assessed"] <= totals["flood_control_contracts"]
+
+
+def test_assessed_excludes_unverified():
+    """UNVERIFIED means the imagery could not be read. Counting it as checked
+    overstated the assessed set by 52 percent."""
+    for f in contractors()["data"]["firms"]:
+        real = sum(v for k, v in f["tiers"].items() if k != "UNVERIFIED")
+        assert f["assessed"] == real
+
+
+def test_the_page_can_state_the_baseline_comparison():
+    """Without it a reader takes the red count as evidence against nine named
+    firms, and the measurement does not support that."""
+    base = contractors()["data"]["totals"]["baseline"]
+    for key in (
+        "firm_not_visible_rate",
+        "site_not_visible_rate",
+        "firm_verified_rate",
+        "site_verified_rate",
+    ):
+        assert isinstance(base[key], (int, float))
+        assert 0 <= base[key] <= 1
 
 
 def test_firm_tier_counts_match_the_project_list_they_price():
@@ -140,6 +174,29 @@ def test_flood_districts_sit_in_the_regions_the_monsoon_covered():
     for d in floods()["data"]["districts"]:
         assert d["region"] in allowed, f"{d['district']} sits in {d['region']}"
         assert "de Oro" not in d["district"]
+
+
+def test_every_flood_district_names_a_province_a_source_covers():
+    """PhilSA mapped Regions 1 and 2 plus Abra and Zambales; PAGASA named
+    Benguet. Kalinga, Apayao and Mountain Province were on the page with no
+    source putting the water there."""
+    sourced = {
+        "Ilocos Norte",
+        "Ilocos Sur",
+        "La Union",
+        "Pangasinan",
+        "Abra",
+        "Benguet",
+        "Zambales",
+        "Cagayan",
+        "Isabela",
+        "Nueva Vizcaya",
+        "Quirino",
+    }
+    for d in floods()["data"]["districts"]:
+        assert any(p.lower() in d["district"].lower() for p in sourced), (
+            f"{d['district']} names no province a cited source covers"
+        )
 
 
 def test_flood_event_cites_a_source_url():

@@ -49,7 +49,7 @@ export default function FloodsPage() {
               color: "var(--color-text-secondary)",
             }}
           >
-            The flood-district record failed to load. Reload to retry.
+            {t.floodsLoadFail}
           </div>
         )}
 
@@ -99,16 +99,16 @@ export default function FloodsPage() {
 
         {doc && (
           <p className="mt-8 text-[11px] leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
-            Flood extent: {doc.data.event.source}.{" "}
+            {t.floodsSourceLine(doc.data.event.source)}{" "}
             <a
               href={doc.data.event.source_url}
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "var(--color-accent)" }}
             >
-              PhilSA flood maps
+              {t.floodsSourceLink}
             </a>
-            . Project records from the public DPWH transparency dataset.
+            . {t.floodsSourceTail}
           </p>
         )}
       </div>
@@ -175,7 +175,7 @@ function DistrictRow({
         <div className="px-5 pb-5">
           {district.sites.length === 0 ? (
             <p className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-              Every completed flood-control site in this district shows some construction signal.
+              {t.floodsNoRedSites(formatNumber(district.projects))}
             </p>
           ) : (
             <ul className="divide-y" style={{ borderColor: "var(--color-border-subtle)" }}>
@@ -197,7 +197,7 @@ function DistrictRow({
                         border: `1px solid ${VERIFICATION_COLORS[s.verification_status]}`,
                       }}
                     >
-                      no construction visible
+                      {t.tierNotVisible}
                     </span>
                     <Link
                       href={`/map?id=${s.id}`}
