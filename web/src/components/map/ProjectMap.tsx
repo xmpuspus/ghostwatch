@@ -547,6 +547,10 @@ export default function ProjectMap() {
                   <button
                     onClick={() => {
                       setQuery("");
+                      // Same reason as the deep link: the map opens on the red
+                      // tier, so picking a green result left the modal over
+                      // bare ground once it closed.
+                      setTier(p.verification_status);
                       openProject(p, true);
                     }}
                     className="flex w-full items-start gap-2 px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-[rgba(255,255,255,0.04)]"

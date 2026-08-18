@@ -186,7 +186,7 @@ function DistrictRow({
                       {s.title}
                     </p>
                     <p className="mt-0.5 font-mono text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                      {s.id} · {s.contractor} · {formatCompact(s.contract_amount ?? 0)}
+                      {s.id} · {s.contractor} · {s.contract_amount === null ? "amount not in the record" : formatCompact(s.contract_amount)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">

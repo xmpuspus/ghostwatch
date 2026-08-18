@@ -3,7 +3,8 @@
 interface SpectralBarsProps {
   ndbi_change: number;
   ndvi_change: number;
-  bsi_change: number;
+  // null when the index could not be read; the bar says so instead of drawing 0.
+  bsi_change: number | null;
 }
 
 const BARS = [
@@ -45,13 +46,28 @@ function formatDelta(v: number): string {
 }
 
 export default function SpectralBars({ ndbi_change, ndvi_change, bsi_change }: SpectralBarsProps) {
-  const changes = [ndbi_change, ndvi_change, bsi_change];
+  const changes: (number | null)[] = [ndbi_change, ndvi_change, bsi_change];
 
   return (
     <div className="space-y-3">
       <h4 className="instrument-label">Spectral index changes</h4>
       {BARS.map((bar, i) => {
-        const delta = changes[i];
+        const raw = changes[i];
+        if (raw === null || raw === undefined) {
+          return (
+            <div key={bar.label} className="space-y-1" title={bar.full}>
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
+                  <span className="font-semibold">{bar.label}</span>
+                </span>
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  not read for this period
+                </span>
+              </div>
+            </div>
+          );
+        }
+        const delta = raw;
         const color = deltaColor(delta, bar.positiveIsBuiltUp);
         const clamped = Math.max(-RANGE, Math.min(RANGE, delta));
         const halfWidth = (Math.abs(clamped) / RANGE) * 50; // % of track, measured from center

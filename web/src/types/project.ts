@@ -57,7 +57,9 @@ export interface VerificationResult {
   after_date: string;
   ndbi_change: number;
   ndvi_change: number;
-  bsi_change: number;
+  // null when the BSI could not be read for a period. Serializing it as 0.0
+  // made missing data look like a measured neutral result.
+  bsi_change: number | null;
   classification: VerificationStatus;
   confidence: number;
   satellite_url_before: string | null;

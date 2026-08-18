@@ -75,7 +75,9 @@ def windows_for(is_flood: bool, row) -> tuple[tuple, tuple]:
         return BEFORE, AFTER
     year = pd.to_numeric(row.get("infraYear"), errors="coerce")
     if pd.isna(year):
-        return BEFORE, AFTER
+        # Falling back to the bridge windows would measure a different period
+        # from the one the map measured, and the case would look normal.
+        raise ValueError("flood-control case has no readable infraYear")
     year = int(year)
     return (
         (f"{year - 1}-01-01", f"{year}-06-30", str(year - 1)),
@@ -411,7 +413,7 @@ def main():
                     "after_date": after[2],
                     "ndbi_change": round(ndbi_d, 4),
                     "ndvi_change": round(ndvi_d, 4),
-                    "bsi_change": round(bsi_d, 4) if bsi_d is not None else 0.0,
+                    "bsi_change": round(bsi_d, 4) if bsi_d is not None else None,
                     "change_class": change_class.value,
                     "classification": vstatus,
                     "verification_status": vstatus,
@@ -429,6 +431,18 @@ def main():
         except Exception as e:  # noqa: BLE001 — log and continue the batch
             print(f"  {pid}: ERROR {e}")
             continue
+
+    # A GEE or export failure skips its case and the loop continues, so a run
+    # that lost 40 of 50 used to overwrite the gallery and exit 0. The next bake
+    # then pruned the tiles for every case it dropped.
+    lost = len(ids) - len(results)
+    if lost:
+        print(f"\n{lost} of {len(ids)} cases produced no result.")
+        if lost > len(ids) * 0.2:
+            raise SystemExit(
+                f"Refusing to overwrite the gallery: {lost} of {len(ids)} cases failed. "
+                "Fix the failures or rerun; the committed gallery is untouched."
+            )
 
     SHOWCASE.parent.mkdir(parents=True, exist_ok=True)
     SHOWCASE.write_text(json.dumps(results, indent=2))

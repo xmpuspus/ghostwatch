@@ -229,7 +229,7 @@ function FirmCard({
                       {p.title}
                     </p>
                     <p className="mt-0.5 font-mono text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                      {p.id} · {p.district || p.region} · {formatCompact(p.contract_amount ?? 0)}
+                      {p.id} · {p.district || p.region} · {p.contract_amount === null ? "amount not in the record" : formatCompact(p.contract_amount)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">

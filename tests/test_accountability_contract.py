@@ -199,6 +199,34 @@ def test_every_flood_district_names_a_province_a_source_covers():
         )
 
 
+def test_flood_sites_are_completed_only():
+    """The page says "completed flood-control site". Counting every status put
+    990 ongoing and 12 terminated or not-started sites behind that noun."""
+    doc = floods()["data"]
+    ids = {s["id"] for d in doc["districts"] for s in d["sites"]}
+    feats = json.loads((DATA / "highlights.json").read_text())["data"]["features"]
+    status = {f["properties"]["id"]: f["properties"]["status"] for f in feats}
+    for pid in ids:
+        assert status.get(pid) == "COMPLETED", f"{pid} reads {status.get(pid)}"
+
+
+def test_flood_totals_cover_every_aggregate_the_page_prints():
+    doc = floods()["data"]
+    districts, totals = doc["districts"], doc["totals"]
+    for key in ("not_visible", "verified", "partial", "projects"):
+        assert totals[key] == sum(d[key] for d in districts), key
+    assert abs(totals["not_visible_value"] - sum(d["not_visible_value"] for d in districts)) < 1
+
+
+def test_a_case_never_claims_a_disagreement_with_an_unassessed_map_tier():
+    """A bridge sits in the context tier, so the map never measured it. The card
+    said two passes landed one tier apart for all eight of them."""
+    cases = json.loads((DATA / "cases.json").read_text())["data"]
+    for c in cases:
+        if c.get("map_tier") == "UNVERIFIED":
+            assert c.get("is_limit_case"), f"{c['project_id']} is unassessed but not a limit case"
+
+
 def test_flood_event_cites_a_source_url():
     event = floods()["data"]["event"]
     assert event["source_url"].startswith("https://")

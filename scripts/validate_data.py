@@ -221,9 +221,18 @@ def check_flood_districts(doc: dict) -> None:
     if totals.get("districts") != len(districts):
         err(f"flood_districts.json: totals.districts={totals.get('districts')} != {len(districts)}")
 
-    derived_nv = sum(d["not_visible"] for d in districts)
-    if totals.get("not_visible") != derived_nv:
-        err(f"flood_districts.json: totals.not_visible={totals.get('not_visible')} != {derived_nv}")
+    # Every aggregate the page prints, not just the red one. Setting the peso
+    # figure to zero used to pass this gate untouched.
+    for key in ("not_visible", "verified", "partial", "projects"):
+        derived = sum(d[key] for d in districts)
+        if totals.get(key) != derived:
+            err(f"flood_districts.json: totals.{key}={totals.get(key)} != {derived}")
+    derived_value = sum(d["not_visible_value"] for d in districts)
+    if abs(totals.get("not_visible_value", 0) - derived_value) > 1:
+        err(
+            f"flood_districts.json: totals.not_visible_value="
+            f"{totals.get('not_visible_value')} != {derived_value}"
+        )
     for d in districts:
         if len(d["sites"]) != d["not_visible"]:
             err(

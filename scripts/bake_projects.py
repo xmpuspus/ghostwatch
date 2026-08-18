@@ -628,7 +628,11 @@ def build_contractors(full: pd.DataFrame, df: pd.DataFrame) -> dict:
 
 def build_flood_districts(df: pd.DataFrame) -> dict:
     """Flood-control sites inside the districts the August 2026 habagat hit."""
-    fc = df[df["project_type"] == "FLOOD_CONTROL"]
+    # Completed only. The page says "completed flood-control site" and the method
+    # only means anything for one: a project that has not been built yet shows no
+    # construction because it is not built. Counting every status put 990 ongoing
+    # and 12 terminated or not-started sites behind that noun.
+    fc = df[(df["project_type"] == "FLOOD_CONTROL") & (df["status"] == "COMPLETED")]
     hit = fc[
         fc["district"].fillna("").str.contains(FLOOD_DISTRICT_PATTERN)
         & fc["region"].isin(FLOOD_REGIONS)

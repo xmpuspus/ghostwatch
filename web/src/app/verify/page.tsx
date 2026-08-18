@@ -28,6 +28,10 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 
 const MIN_CONFIDENCE_OPTIONS = [0, 0.2, 0.3];
 
+// A bridge sits in the context tier, so the map never assessed it. Saying two
+// passes disagreed about it would invent a measurement that never happened.
+const ASSESSED_TIERS = new Set(["VERIFIED", "NOT_VISIBLE", "PARTIAL", "INCONCLUSIVE"]);
+
 export default function VerifyPage() {
   return (
     <Suspense
@@ -287,7 +291,9 @@ function VerifyContent() {
                   can land one tier from the marker, and hiding that would put a
                   card next to a map dot it silently contradicts. Say it instead,
                   because the gap IS the method's error bar. */}
-              {selected.map_tier && selected.map_tier !== selected.classification && (
+              {selected.map_tier &&
+                ASSESSED_TIERS.has(selected.map_tier) &&
+                selected.map_tier !== selected.classification && (
                 <div
                   className="flex items-start gap-2 rounded-sm border-l-2 px-3 py-2 text-xs leading-snug"
                   style={{
@@ -385,7 +391,7 @@ function VerifyContent() {
                   <MetaField label="After" value={selected.after_date} mono />
                   <MetaField label="NDBI Δ" value={fmtDelta(selected.ndbi_change)} mono />
                   <MetaField label="NDVI Δ" value={fmtDelta(selected.ndvi_change)} mono />
-                  <MetaField label="BSI Δ" value={fmtDelta(selected.bsi_change)} mono />
+                  <MetaField label="BSI Δ" value={selected.bsi_change === null ? "not read" : fmtDelta(selected.bsi_change)} mono />
                 </dl>
               </div>
 
