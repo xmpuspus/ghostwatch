@@ -8,13 +8,8 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
   Cell,
-  LineChart,
-  Line,
   CartesianGrid,
-  Legend,
 } from "recharts";
 import { formatCompact, formatNumber, formatPercent, DISCLAIMER } from "@/lib/constants";
 import { api } from "@/lib/api";
@@ -30,6 +25,16 @@ interface ChartData {
 
 const AXIS = { fontSize: 11, fill: "var(--color-text-muted)", fontFamily: "var(--font-mono-stack)" };
 const GRID = "rgba(230,237,234,0.07)";
+
+// Two region names wrapped to three lines each and collided with their
+// neighbours. Their official short forms fit on one line.
+const REGION_SHORT: Record<string, string> = {
+  "National Capital Region": "NCR",
+  "Cordillera Administrative Region": "CAR",
+  "Negros Island Region": "NIR",
+  "Bangsamoro Autonomous Region in Muslim Mindanao": "BARMM",
+};
+const shortRegion = (name: string) => REGION_SHORT[name] ?? name;
 
 function Tip({ rows, label }: { rows: { name: string; value: string; color?: string }[]; label?: string }) {
   return (
@@ -94,6 +99,31 @@ export default function DashboardPage() {
   const confirmed = stats?.verified_count ?? 0;
   const chartFallback = chartsError ? <LoadError /> : <EmptyState />;
 
+  // A 5% headroom axis printed 86 next to a largest bar of 81, so the axis end
+  // read as a data value. Round up to a clean step instead.
+  const nvMax = nvRegions.length ? Math.max(...nvRegions.map((r) => r.count)) : 0;
+  const roundedMax = nvMax <= 10 ? 10 : Math.ceil(nvMax / 10) * 10;
+  const topRegion = nvRegions[0];
+  const topRegionTitle = topRegion
+    ? `${topRegion.region} leads with ${formatNumber(topRegion.count)} sites showing no construction`
+    : "No construction visible, by region";
+  // The red tier is about 2% of assessed, and a donut turns that into an
+  // unreadable sliver. A sorted bar keeps every count legible next to its label.
+  const tierBars = charts?.tier_dist ?? [];
+  const tierMax = tierBars.length ? Math.max(...tierBars.map((tb) => tb.value)) : 0;
+  const peakYear = (charts?.yearly ?? []).reduce<{ year: string; not_visible: number } | null>(
+    (best, y) => (best === null || y.not_visible > best.not_visible ? y : best),
+    null,
+  );
+  const topStatus = (charts?.status_dist ?? [])[0];
+  const statusCount = (charts?.status_dist ?? []).reduce((n, s) => n + s.value, 0);
+  const statusTitle = topStatus
+    ? `${formatPercent((topStatus.value / statusCount) * 100, 0)} of mapped projects report ${topStatus.name.toLowerCase()}`
+    : "Reported status across mapped DPWH projects";
+  const yearlyTitle = peakYear
+    ? `${peakYear.year} funding carries the most unseen value, ₱${peakYear.not_visible.toFixed(1)}B`
+    : "Value with no construction visible, by funding year";
+
   return (
     <div className="min-h-screen pt-14" style={{ backgroundColor: "var(--color-bg)" }}>
       <div className="mx-auto max-w-7xl px-5 py-8 md:px-6">
@@ -141,55 +171,52 @@ export default function DashboardPage() {
         <div className="mt-8 space-y-6">
           {/* Row 1 */}
           <div className="grid gap-6 lg:grid-cols-3">
-            <Panel title="Satellite Observations" subtitle="What the imagery shows across assessed projects">
-              {!charts?.tier_dist?.length ? (
+            <Panel
+              className="self-start"
+              title="Most assessed sites read inconclusive, and 2% read empty"
+              subtitle="What 10m Sentinel-2 shows across every assessed project"
+            >
+              {!tierBars.length ? (
                 chartFallback
               ) : (
-                <>
-                  <ResponsiveContainer width="100%" height={210}>
-                    <PieChart>
-                      <Pie
-                        data={charts.tier_dist}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={54}
-                        outerRadius={82}
-                        paddingAngle={2}
-                        dataKey="value"
-                        stroke="var(--color-bg)"
-                        strokeWidth={2}
-                      >
-                        {charts.tier_dist.map((e, i) => (
-                          <Cell key={i} fill={e.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={({ payload }) =>
-                          payload?.[0] ? (
-                            <Tip rows={[{ name: payload[0].payload.name, value: formatNumber(payload[0].payload.value), color: payload[0].payload.color }]} />
-                          ) : null
-                        }
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="mt-3 space-y-1.5">
-                    {charts.tier_dist.map((v) => (
-                      <div key={v.tier} className="flex items-center justify-between text-[11px]">
-                        <span className="flex items-center gap-1.5">
-                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: v.color }} />
-                          <span style={{ color: "var(--color-text-secondary)" }}>{v.name}</span>
-                        </span>
-                        <span className="stat-value text-[11px]" style={{ color: "var(--color-text-primary)" }}>
+                <div className="space-y-3">
+                  {tierBars.map((v) => (
+                    <div key={v.tier}>
+                      <div className="flex items-baseline justify-between text-[11px]">
+                        <span style={{ color: "var(--color-text-secondary)" }}>{v.name}</span>
+                        <span className="stat-value text-[12px]" style={{ color: v.color }}>
                           {formatNumber(v.value)}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </>
+                      <div
+                        className="mt-1 h-2.5 w-full overflow-hidden rounded-sm"
+                        style={{ backgroundColor: "var(--color-bg-secondary)" }}
+                        role="img"
+                        aria-label={`${v.name}: ${formatNumber(v.value)} projects`}
+                      >
+                        <div
+                          className="h-full rounded-sm"
+                          style={{
+                            width: `${tierMax ? Math.max((v.value / tierMax) * 100, 0.8) : 0}%`,
+                            backgroundColor: v.color,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <p className="pt-1 text-[10px] leading-snug" style={{ color: "var(--color-text-muted)" }}>
+                    Bars share one scale, so the red tier stays readable next to a
+                    category thirty times its size.
+                  </p>
+                </div>
               )}
             </Panel>
 
-            <Panel className="lg:col-span-2" title="No Construction Visible, by Region" subtitle="Completed projects with no visible construction from space">
+            <Panel
+              className="lg:col-span-2"
+              title={topRegionTitle}
+              subtitle="Completed flood-control projects where 10m Sentinel-2 shows no construction"
+            >
               {!nvRegions.length ? (
                 chartFallback
               ) : (
@@ -201,11 +228,18 @@ export default function DashboardPage() {
                     <BarChart data={nvRegions} layout="vertical" margin={{ left: 8, right: 16 }}>
                       <XAxis
                         type="number"
-                        domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.05)]}
+                        domain={[0, roundedMax]}
                         tick={AXIS}
                         stroke={GRID}
                       />
-                      <YAxis type="category" dataKey="region" width={104} tick={AXIS} stroke={GRID} />
+                      <YAxis
+                        type="category"
+                        dataKey="region"
+                        width={104}
+                        tick={AXIS}
+                        stroke={GRID}
+                        tickFormatter={shortRegion}
+                      />
                       <Tooltip
                         cursor={{ fill: "rgba(240,83,63,0.07)" }}
                         content={({ payload }) =>
@@ -229,7 +263,10 @@ export default function DashboardPage() {
           </div>
 
           {/* Row 2 — not-visible value over time */}
-          <Panel title="Value With No Construction Visible, by Funding Year" subtitle="Total funded vs not-visible value, in billions of pesos">
+          <Panel
+            title={yearlyTitle}
+            subtitle="Value with no construction visible, in billions of pesos. Hover a bar for the total funded that year."
+          >
             {!charts?.yearly?.length ? (
               chartFallback
             ) : (
@@ -238,36 +275,50 @@ export default function DashboardPage() {
                   Line chart: total funded contract value versus value with no construction visible,
                   by funding year, in billions of pesos.
                 </p>
+                {/* One series, on its own scale. Plotted against total funded
+                    value (up to ₱450B) the not-visible line sat flat on zero and
+                    read as nothing, which is the opposite of what it shows. */}
                 <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={charts.yearly} margin={{ top: 8, right: 12 }}>
+                  <BarChart data={charts.yearly} margin={{ top: 8, right: 12 }}>
                     <CartesianGrid strokeDasharray="2 4" stroke={GRID} vertical={false} />
                     <XAxis dataKey="year" tick={AXIS} stroke={GRID} />
                     <YAxis tick={AXIS} tickFormatter={(v) => `₱${v}B`} stroke={GRID} />
                     <Tooltip
+                      cursor={{ fill: "rgba(240,83,63,0.07)" }}
                       content={({ payload, label }) =>
-                        payload?.length ? (
+                        payload?.[0] ? (
                           <Tip
                             label={String(label)}
-                            rows={payload.map((p) => ({
-                              name: String(p.name),
-                              value: `₱${(typeof p.value === "number" ? p.value : 0).toFixed(1)}B`,
-                              color: String(p.color ?? ""),
-                            }))}
+                            rows={[
+                              {
+                                name: "No construction visible",
+                                value: `₱${payload[0].payload.not_visible.toFixed(1)}B across ${formatNumber(payload[0].payload.not_visible_count)} sites`,
+                                color: "var(--color-absence)",
+                              },
+                              {
+                                name: "Total funded",
+                                value: `₱${payload[0].payload.value.toFixed(1)}B across ${formatNumber(payload[0].payload.count)} sites`,
+                              },
+                            ]}
                           />
                         ) : null
                       }
                     />
-                    <Legend wrapperStyle={{ fontSize: 11, fontFamily: "var(--font-mono-stack)" }} />
-                    <Line type="monotone" dataKey="value" name="Funded" stroke="var(--color-accent)" strokeWidth={2} dot={{ r: 2.5, fill: "var(--color-accent)" }} />
-                    <Line type="monotone" dataKey="not_visible" name="Not visible" stroke="var(--color-absence)" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 2.5, fill: "var(--color-absence)" }} />
-                  </LineChart>
+                    <Bar
+                      dataKey="not_visible"
+                      name="No construction visible"
+                      radius={[2, 2, 0, 0]}
+                      fill="var(--color-absence)"
+                      fillOpacity={0.88}
+                    />
+                  </BarChart>
                 </ResponsiveContainer>
               </>
             )}
           </Panel>
 
           {/* Row 3 — status distribution */}
-          <Panel title="Project Status" subtitle="Reported status across mapped DPWH projects">
+          <Panel title={statusTitle} subtitle="Reported status across every mapped DPWH project">
             {!charts?.status_dist?.length ? (
               chartFallback
             ) : (

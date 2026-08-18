@@ -3,6 +3,7 @@ import type {
   OverviewStats,
   Pagination,
 } from "@/types/project";
+import type { ContractorsDoc, FloodDistrictsDoc } from "@/types/accountability";
 
 // Static deploy: the Python pipeline bakes real DPWH + satellite data into
 // /public/data/*.json at build time. There is no backend at request time —
@@ -25,5 +26,9 @@ export const api = {
   satellite: {
     cases: () =>
       getJSON<{ data: VerificationResult[]; pagination: Pagination }>("cases.json"),
+  },
+  accountability: {
+    contractors: () => getJSON<ContractorsDoc>("contractors.json"),
+    floodDistricts: () => getJSON<FloodDistrictsDoc>("flood_districts.json"),
   },
 };

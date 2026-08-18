@@ -8,6 +8,8 @@ import { useLang } from "@/lib/lang";
 
 const NAV = [
   { href: "/map", label: "Map" },
+  { href: "/floods", label: "Floods" },
+  { href: "/contractors", label: "Contractors" },
   { href: "/verify", label: "Verify" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/methodology", label: "Methodology" },

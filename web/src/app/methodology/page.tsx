@@ -10,7 +10,7 @@ export default function MethodologyPage() {
       <div className="mx-auto max-w-3xl px-6 py-12">
         <span className="instrument-label">Methodology &middot; Sentinel-2</span>
         <h1 className="mb-2 mt-2 font-display text-3xl font-bold" style={{ color: "var(--color-text-primary)" }}>
-          How It Works
+          Free 10m satellite imagery can tell built from not-built, and here is where it stops
         </h1>
         <p className="mb-10 text-base" style={{ color: "var(--color-text-muted)" }}>
           Tulay Pinoy uses free Sentinel-2 satellite imagery and spectral change detection
@@ -217,7 +217,9 @@ export default function MethodologyPage() {
             deliberately conservative: at about 2 percent of assessed sites it sits well below the
             rate the government&apos;s own Independent Commission for Infrastructure found when it
             reviewed roughly 8,000 flood-control projects and confirmed about one in twenty as
-            anomalous. To be precise about what that comparison is: choosing a cut so the flagged
+            anomalous. That Commission closed on 31 March 2026 and handed its evidence to the Office
+            of the Ombudsman and the Department of Justice, so its published rate is a fixed
+            historical reference point here, not a live feed. To be precise about what that comparison is: choosing a cut so the flagged
             share sits below a known confirmed rate is a conservative budgeting choice, not
             corroboration. We have not matched individual flagged sites against the Commission&apos;s
             findings, and the two lists should not be assumed to overlap. The cut itself is a fixed
@@ -225,6 +227,31 @@ export default function MethodologyPage() {
             bake script) so anyone can re-derive the red set or move the cut and see what changes. A
             red marker is a prompt for ground-truth review, never proof: narrow or small structures
             can be genuinely built yet sit below optical resolution.
+          </p>
+        </section>
+
+        {/* Reproducibility — measured, not asserted. This is the least flattering
+            number on the site, so it gets its own section rather than a footnote. */}
+        <section id="reproducibility" className="mb-10 scroll-mt-20">
+          <h2 className="mb-3 text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
+            Two passes over the same imagery agreed on the exact tier 13 times out of 42
+          </h2>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
+            The case gallery re-measures every site it shows, using a second implementation. Same
+            free Sentinel-2 archive, same 10m scale, same 500m circle, same before and after
+            windows, same classifier. On 42 completed flood-control sites the two passes landed on
+            the same tier 13 times, and agreed on the coarser question, whether any construction
+            signal appeared at all, 24 times. The median gap between their built-up index deltas was
+            0.12, which is wider than the 0.16 band the whole absence score is spread across.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
+            We have not run this to ground. The remaining differences between the two code paths are
+            small, and the size of the gap says something a smaller difference should not produce.
+            What we can say is what the number means for a reader: on a single site, the tier is a
+            reading and not a measurement, and a second honest pass can move it. That is why every
+            case shows its own before and after image, why the map never states a verdict, and why
+            the gallery card prints both tiers out loud whenever they disagree. Treat the aggregate
+            picture as the finding and any one marker as a place to go and look.
           </p>
         </section>
 

@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -42,6 +43,13 @@ ROOT = Path(__file__).resolve().parent.parent
 PARQUET = ROOT / "data" / "raw" / "dpwh" / "dpwh_projects.parquet"
 SHOWCASE = ROOT / "data" / "showcase" / "verifications.json"
 OUT = ROOT / "web" / "public" / "data"
+
+# The DPWH record this bake reads, which is older than the bake itself. The
+# HuggingFace dataset last took an upload on 2026-01-16 and last took any commit
+# on 2026-01-22, so a bake in June or August still carries January data. Printing
+# only the bake date told readers the record was five months fresher than it is.
+SOURCE_REVISION = "648ea96af4f7625d606fda0b78803917913a26b7"
+SOURCE_DATE = "2026-01-22"
 
 # Categories that drive colored tiers (footprints Sentinel-2 can resolve) vs.
 # categories shown only as faint context dots. Flood control is the flagship.
@@ -69,6 +77,91 @@ DISCLAIMER = (
     "closer, never proof a project is missing; many genuinely-built projects are below "
     "clean optical detection. Every read needs ground-truth investigation. Figures from "
     "the public DPWH record."
+)
+
+# --- Revoked-licence layer -------------------------------------------------
+#
+# PCAB Resolution 075, series of 2025, dated 2025-09-01, revoked the contractor
+# licences of nine firms that Cezarah "Sarah" Discaya named as hers at a Senate
+# blue ribbon hearing. Those nine firms hold contracts in the DPWH transparency
+# record, so the public can ask what the satellite saw at those sites.
+#
+# The join runs on the PCAB registration number in the contractor string, never
+# on the name and never on the "[REVOKED]" marker:
+#   - The registration number is unique and survives a name change.
+#   - A joint venture reads "FIRM A (111) / FIRM B (222)", so a number match
+#     credits both partners.
+#   - The "[REVOKED]" marker is a CURRENT registry status stamped backward onto
+#     every historical row, and DPWH does not apply it evenly. Elite (49128) and
+#     YPR (45002) carry no marker at all, though PCAB revoked both.
+#
+# A revoked licence is an administrative act about a firm. It says nothing about
+# any one project, and the page must never imply that it does.
+PCAB_RESOLUTION = "PCAB Resolution 075, s. 2025 (2025-09-01)"
+REVOKED_FIRMS = {
+    "38958": "Alpha & Omega Gen. Contractor & Development Corp.",
+    "39196": "St. Timothy Construction Corporation",
+    "31762": "St. Gerrard Construction Gen. Contractor & Development Corp.",
+    "40908": "St. Matthew Gen. Contractor & Development Corp.",
+    "45914": "Great Pacific Builders and Gen. Contractor Inc.",
+    "49129": "Amethyst Horizon Builders and Gen. Contractor and Development Corp.",
+    "52351": "Way Maker General Contractor OPC",
+    "49128": "Elite General Contractor and Development Corp.",
+    "45002": "YPR Gen. Contractor and Construction Supply Inc.",
+}
+PCAB_ID_RE = re.compile(r"\((?:\[REVOKED\]\s*)?(\d+)\)")
+
+REVOKED_DISCLAIMER = (
+    "PCAB revoked these nine contractor licences on 2025-09-01 (Resolution 075, s. 2025). "
+    "That is an administrative act about a firm, and it is not a finding about any one "
+    "project on this page. The satellite reads carry the same meaning they carry on the "
+    "map: no construction visible is a prompt to look closer, never proof a project is "
+    "missing. Contract records come from the public DPWH transparency dataset."
+)
+
+# --- August 2026 flood districts -------------------------------------------
+#
+# PAGASA put the southwest monsoon over Regions I and II, Abra and Zambales from
+# 06 to 13 August 2026, and PhilSA mapped the flood extent from Sentinel-1 on 06
+# and 09 August. These are the DPWH engineering districts that sit inside that
+# coverage, so a reader can ask what the satellite saw at flood-control sites in
+# the places that just flooded.
+#
+# The overlap is geographic, and it is NOT a claim that any project failed.
+# Engineers build flood-control works to a return-period design standard, and a
+# 200 mm day beats most of them by design. A dike also moves water downstream on
+# purpose.
+FLOOD_EVENT = {
+    "name": "Southwest monsoon (habagat), 06-13 August 2026",
+    "start": "2026-08-06",
+    "end": "2026-08-13",
+    "source": "PAGASA advisories; PhilSA Sentinel-1 flood extents, 06 and 09 August 2026",
+    "source_url": (
+        "https://philsa.gov.ph/news/satellite-data-show-flood-extents-in-regions-1-and-2-"
+        "due-to-tropical-storm-maymay-and-habagat/"
+    ),
+}
+FLOOD_DISTRICT_PATTERN = re.compile(
+    r"\b(?:Ilocos Norte|Ilocos Sur|La Union|Pangasinan|Abra|Benguet|Zambales|"
+    r"Mountain Province|Kalinga|Apayao|Cagayan|Isabela|Nueva Vizcaya|Quirino)\b",
+    re.IGNORECASE,
+)
+# The province names above repeat elsewhere in the country, so the name alone
+# picked up Cagayan de Oro City (Region X) and Isabela City (Region IX), both a
+# thousand kilometres from this weather. A district has to sit in one of the
+# regions the monsoon actually covered.
+FLOOD_REGIONS = {
+    "Region I",
+    "Region II",
+    "Region III",
+    "Cordillera Administrative Region",
+}
+FLOOD_DISCLAIMER = (
+    "These districts sit inside the area PAGASA and PhilSA reported as flooded between 06 "
+    "and 13 August 2026. The overlap is geographic. It is not a claim that any project "
+    "failed: engineers build flood-control works to a return-period standard, a 200 mm day "
+    "beats most of them by design, and a dike moves water downstream on purpose. The "
+    "satellite reads here answer whether construction is visible, never whether it worked."
 )
 
 _STATUS_MAP = {
@@ -394,6 +487,226 @@ def build_charts(df: pd.DataFrame) -> dict:
     )
 
 
+def pcab_ids(contractor: object) -> set[str]:
+    """Registration numbers in a contractor string, including a joint venture."""
+    return set(PCAB_ID_RE.findall(str(contractor or "")))
+
+
+def build_contractors(full: pd.DataFrame, df: pd.DataFrame) -> dict:
+    """Portfolio and satellite reads for the nine firms PCAB struck off.
+
+    `full` is the whole DPWH record, because a firm's portfolio spans every
+    category. `df` is the baked frame, so it carries the tier each flood-control
+    or bridge site reads at.
+    """
+    ids = full["contractor"].map(pcab_ids)
+    full = full.assign(_pcab=ids)
+    tier_by_id = dict(zip(df["id"], df["verification_status"]))
+    amount_by_id = dict(zip(df["id"], df["contract_amount"]))
+
+    firms = []
+    for pcab, name in REVOKED_FIRMS.items():
+        rows = full[full["_pcab"].map(lambda s, p=pcab: p in s)]
+        if rows.empty:
+            continue
+        cat = rows["category"].astype(str).str.strip().str.lower()
+        flood = rows[cat.isin(CLASSIFIED_CATEGORIES)]
+        budget = pd.to_numeric(rows["budget"], errors="coerce")
+        flood_budget = pd.to_numeric(flood["budget"], errors="coerce")
+
+        tiers: dict[str, int] = {}
+        projects = []
+        for r in flood.itertuples():
+            pid = str(r.contractId)
+            tier = tier_by_id.get(pid)
+            if tier is None:
+                continue
+            tiers[tier] = tiers.get(tier, 0) + 1
+            if tier in HIGHLIGHT_TIERS:
+                projects.append(
+                    {
+                        "id": pid,
+                        "title": str(r.description).strip(),
+                        "verification_status": tier,
+                        "contract_amount": num_or_none(amount_by_id.get(pid)),
+                        "region": region_of(r.location),
+                        "district": province_of(r.location),
+                    }
+                )
+        projects.sort(key=lambda p: p["contract_amount"] or 0, reverse=True)
+        not_visible_value = sum(
+            p["contract_amount"] or 0 for p in projects if p["verification_status"] == "NOT_VISIBLE"
+        )
+
+        firms.append(
+            {
+                "pcab_id": pcab,
+                "name": name,
+                "contracts": int(len(rows)),
+                "value": float(budget.fillna(0).sum()),
+                "flood_control_contracts": int(len(flood)),
+                "flood_control_value": float(flood_budget.fillna(0).sum()),
+                "assessed": int(sum(tiers.values())),
+                "tiers": tiers,
+                "not_visible_value": float(not_visible_value),
+                # The registry marker is missing on some rows, so record whether
+                # DPWH stamped this firm at all. The join never depends on it.
+                "marked_revoked_in_record": bool(
+                    rows["contractor"].astype(str).str.contains(r"\[REVOKED\]", regex=True).any()
+                ),
+                "projects": projects,
+            }
+        )
+    firms.sort(key=lambda f: f["value"], reverse=True)
+
+    all_ids = set(REVOKED_FIRMS)
+    matched = full[full["_pcab"].map(lambda s: bool(s & all_ids))]
+    mcat = matched["category"].astype(str).str.strip().str.lower()
+    mflood = matched[mcat.isin(CLASSIFIED_CATEGORIES)]
+    totals = {
+        "firms": len(firms),
+        "contracts": int(len(matched)),
+        "value": float(pd.to_numeric(matched["budget"], errors="coerce").fillna(0).sum()),
+        "flood_control_contracts": int(len(mflood)),
+        "flood_control_value": float(
+            pd.to_numeric(mflood["budget"], errors="coerce").fillna(0).sum()
+        ),
+        "assessed": sum(f["assessed"] for f in firms),
+        "not_visible": sum(f["tiers"].get("NOT_VISIBLE", 0) for f in firms),
+        "verified": sum(f["tiers"].get("VERIFIED", 0) for f in firms),
+        "not_visible_value": sum(f["not_visible_value"] for f in firms),
+    }
+    return envelope(
+        {"source": PCAB_RESOLUTION, "totals": totals, "firms": firms},
+        disclaimer=False,
+    ) | {"disclaimer": REVOKED_DISCLAIMER}
+
+
+def build_flood_districts(df: pd.DataFrame) -> dict:
+    """Flood-control sites inside the districts the August 2026 habagat hit."""
+    fc = df[df["project_type"] == "FLOOD_CONTROL"]
+    hit = fc[
+        fc["district"].fillna("").str.contains(FLOOD_DISTRICT_PATTERN)
+        & fc["region"].isin(FLOOD_REGIONS)
+    ]
+
+    districts = []
+    for name, g in hit.groupby("district"):
+        counts = g["verification_status"].value_counts().to_dict()
+        nv = g[g["verification_status"] == "NOT_VISIBLE"]
+        districts.append(
+            {
+                "district": name,
+                "region": g["region"].mode().iat[0] if not g["region"].mode().empty else "",
+                "projects": int(len(g)),
+                "not_visible": int(len(nv)),
+                "verified": int(counts.get("VERIFIED", 0)),
+                "partial": int(counts.get("PARTIAL", 0)),
+                "not_visible_value": float(nv["contract_amount"].fillna(0).sum()),
+                "sites": [
+                    {
+                        "id": r.id,
+                        "title": r.title,
+                        "contractor": r.contractor,
+                        "contract_amount": num_or_none(r.contract_amount),
+                        "verification_status": r.verification_status,
+                        "lat": num_or_none(r.lat),
+                        "lng": num_or_none(r.lng),
+                    }
+                    for r in nv.itertuples()
+                ],
+            }
+        )
+    districts.sort(key=lambda d: d["not_visible"], reverse=True)
+
+    totals = {
+        "districts": len(districts),
+        "projects": int(len(hit)),
+        "not_visible": sum(d["not_visible"] for d in districts),
+        "verified": sum(d["verified"] for d in districts),
+        "partial": sum(d["partial"] for d in districts),
+        "not_visible_value": sum(d["not_visible_value"] for d in districts),
+    }
+    return envelope(
+        {"event": FLOOD_EVENT, "totals": totals, "districts": districts},
+        disclaimer=False,
+    ) | {"disclaimer": FLOOD_DISCLAIMER}
+
+
+def build_cases(df: pd.DataFrame, showcase: dict[str, dict]) -> dict:
+    """The satellite case gallery, joined to the baked project record.
+
+    scripts/bake_satellite.py writes the GEE reads; this pins each one to the
+    contract record so a case shows the same contractor, region and money the
+    map shows.
+    """
+    by_id = df.set_index("id")
+    cases = []
+    for pid, r in showcase.items():
+        proj = by_id.loc[pid] if pid in by_id.index else None
+        cases.append(
+            {
+                "project_id": pid,
+                "project_title": (proj["title"] if proj is not None else r.get("title", pid)),
+                "contractor": (proj["contractor"] if proj is not None else None),
+                "contract_amount": (
+                    num_or_none(proj["contract_amount"]) if proj is not None else None
+                ),
+                "region": (proj["region"] if proj is not None else None),
+                "district": (proj["district"] if proj is not None else None),
+                "project_type": (proj["project_type"] if proj is not None else None),
+                "before_date": r["before_date"],
+                "after_date": r["after_date"],
+                "ndbi_change": r["ndbi_change"],
+                "ndvi_change": r["ndvi_change"],
+                "bsi_change": r["bsi_change"],
+                "classification": r["classification"],
+                # What this project's marker reads on the map. The gallery
+                # re-measures each site on its own, so the two can land one tier
+                # apart on a borderline read. Carrying both lets the card say so
+                # instead of quietly contradicting the marker next to it.
+                "map_tier": (proj["verification_status"] if proj is not None else None),
+                "confidence": r["confidence"],
+                "is_limit_case": bool(r.get("is_limit_case", False)),
+                "data_source": r.get("data_source", "optical"),
+                "satellite_url_before": f"/data/tiles/{pid}/before_rgb.png",
+                "satellite_url_after": f"/data/tiles/{pid}/after_rgb.png",
+            }
+        )
+    # Lead with the tier the map leads with, then the clearest read inside it.
+    order = {"NOT_VISIBLE": 0, "VERIFIED": 1, "PARTIAL": 2, "INCONCLUSIVE": 3}
+    cases.sort(key=lambda c: (order.get(c["classification"], 9), -c["confidence"]))
+    return {
+        "data": cases,
+        "pagination": {
+            "page": 1,
+            "per_page": max(len(cases), 1),
+            "total": len(cases),
+            "total_pages": 1,
+        },
+    }
+
+
+def prune_orphan_tiles(live_ids: set[str]) -> None:
+    """Delete tile folders no case points at any more.
+
+    A gallery rebake leaves the previous run's PNGs behind. They are committed,
+    so they stay in the repo and in the deploy forever, reachable by nothing.
+    """
+    tiles = OUT / "tiles"
+    if not tiles.is_dir():
+        return
+    removed = 0
+    for child in sorted(tiles.iterdir()):
+        if child.is_dir() and child.name not in live_ids:
+            for f in child.iterdir():
+                f.unlink()
+            child.rmdir()
+            removed += 1
+    if removed:
+        print(f"  pruned {removed} tile folders with no case pointing at them")
+
+
 def write_json(path: Path, obj: dict) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(obj, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
@@ -457,6 +770,37 @@ def main() -> None:
     hashes["context.json"] = write_json(OUT / "context.json", build_geojson(context_df))
     hashes["overview.json"] = write_json(OUT / "overview.json", build_overview(df, classification))
     hashes["charts.json"] = write_json(OUT / "charts.json", build_charts(df))
+
+    full = pd.read_parquet(PARQUET)
+    contractors = build_contractors(full, df)
+    hashes["contractors.json"] = write_json(OUT / "contractors.json", contractors)
+    ct = contractors["data"]["totals"]
+    print(
+        f"Revoked firms: {ct['firms']}  contracts: {ct['contracts']}  "
+        f"value: ₱{ct['value'] / 1e9:.1f}B  assessed: {ct['assessed']}  "
+        f"no construction visible: {ct['not_visible']}"
+    )
+
+    floods = build_flood_districts(df)
+    hashes["flood_districts.json"] = write_json(OUT / "flood_districts.json", floods)
+    ft = floods["data"]["totals"]
+    print(
+        f"Flood districts: {ft['districts']}  flood-control sites: {ft['projects']}  "
+        f"no construction visible: {ft['not_visible']}"
+    )
+
+    showcase = load_showcase()
+    if showcase:
+        cases = build_cases(df, showcase)
+        hashes["cases.json"] = write_json(OUT / "cases.json", cases)
+        by_tier: dict[str, int] = {}
+        for c in cases["data"]:
+            by_tier[c["classification"]] = by_tier.get(c["classification"], 0) + 1
+        print(f"Case gallery: {len(cases['data'])} cases {by_tier}")
+        prune_orphan_tiles({c["project_id"] for c in cases["data"]})
+    else:
+        print("No showcase verifications found — leaving cases.json untouched.")
+
     manifest = {
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "DPWH transparency data (HuggingFace bettergovph/dpwh-transparency-data)",
@@ -468,6 +812,14 @@ def main() -> None:
         "not_visible_count": int(len(nv)),
         "verified_count": int((df["verification_status"] == "VERIFIED").sum()),
         "absence_cut": ABSENCE_CUT,
+        # The DPWH record itself, which is older than this bake. The pin lives in
+        # ghostwatch/config.py; the footer prints both dates so nobody reads the
+        # bake date as the date of the data.
+        "source_revision": SOURCE_REVISION,
+        "source_date": SOURCE_DATE,
+        "revoked_firms": ct["firms"],
+        "revoked_contracts": ct["contracts"],
+        "flood_event": FLOOD_EVENT["name"],
         "sha256": hashes,
     }
     write_json(OUT / "manifest.json", manifest)

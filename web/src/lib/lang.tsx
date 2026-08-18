@@ -34,6 +34,11 @@ export function useLang() {
   return useContext(LangContext);
 }
 
+// The dictionary is `as const`, so STRINGS.en and STRINGS.tl carry different
+// literal types. A component that takes the active dictionary as a prop needs
+// this union, never STRINGS["en"] alone.
+export type Strings = (typeof STRINGS)[Lang];
+
 export const STRINGS = {
   en: {
     heroKicker: "Open source · DPWH infrastructure · Sentinel-2",
@@ -61,6 +66,47 @@ export const STRINGS = {
       `Reported complete, but 10m Sentinel-2 shows no new built-up here${delta}. That is a prompt to look closer, not proof the project is missing: narrow or small structures can be genuinely built yet sit below optical resolution.`,
     searchPlaceholder: "Search title, contractor, place…",
     searchLoading: "Search projects… (loading full record)",
+
+    contractorsNav: "Contractors",
+    contractorsKicker: "PCAB Resolution 075, s. 2025 · public record",
+    contractorsTitle: "Nine firms lost their licences. Their sites are still on the map.",
+    contractorsSub:
+      "On 1 September 2025 the Philippine Contractors Accreditation Board revoked the contractor licences of nine firms. This page holds every DPWH contract in the public record that those firms won, and what free Sentinel-2 imagery shows at their completed flood-control sites.",
+    contractorsStatFirms: "firms struck off",
+    contractorsStatContracts: "DPWH contracts",
+    contractorsStatValue: "contract value",
+    contractorsStatNotVisible: "no construction visible",
+    contractorsColContracts: "Contracts",
+    contractorsColValue: "Value",
+    contractorsColFlood: "Flood control",
+    contractorsColChecked: "Checked from space",
+    contractorsNoMarker: "DPWH does not stamp this firm as revoked in the record",
+    contractorsMatchNote:
+      "Contracts are matched on the PCAB registration number in the DPWH record, so a joint venture counts for both partners. The record's own revoked marker is a current status applied backward, and it is missing on some rows, so this page never relies on it.",
+    contractorsDisclaimer:
+      "A revoked licence is an administrative act about a firm. It is not a finding about any project on this page. The satellite reads mean what they mean on the map: no construction visible is a prompt to look closer, never proof a project is missing.",
+    contractorsSitesTitle: "Completed flood-control sites, checked from space",
+    contractorsOpenMap: "Open on the map",
+
+    floodsNav: "Floods",
+    floodsKicker: "Habagat, 06 to 13 August 2026 · PAGASA and PhilSA",
+    floodsTitle: "The districts that flooded this month, and the flood control built there",
+    floodsSub:
+      "PAGASA put the southwest monsoon over Ilocos, Cagayan Valley, Abra, Benguet and Zambales from 6 to 13 August 2026, and PhilSA mapped the flood extent from Sentinel-1 radar. These are the DPWH engineering districts inside that area, with what the satellite shows at each completed flood-control site.",
+    floodsStatDistricts: "districts in the flood area",
+    floodsStatProjects: "flood-control sites",
+    floodsStatNotVisible: "no construction visible",
+    floodsStatValue: "value, no construction visible",
+    floodsColDistrict: "District",
+    floodsColProjects: "Sites",
+    floodsColNotVisible: "No construction visible",
+    floodsColValue: "Value",
+    floodsMeasuredNote:
+      "These sites were checked for visible construction, never for flood performance. No number on this page says a project failed.",
+    floodsDisclaimer:
+      "The overlap is geographic. It is not a claim that any project failed. Engineers build flood control to a return-period standard, a 200 mm day beats most of them by design, and a dike moves water downstream on purpose. These reads answer whether construction is visible, never whether it worked.",
+    dataAsOf: "DPWH record as of",
+    builtOn: "checked and baked on",
   },
   tl: {
     heroKicker: "Open source · Imprastraktura ng DPWH · Sentinel-2",
@@ -88,5 +134,46 @@ export const STRINGS = {
       `Naiulat na tapos, ngunit walang bagong built-up na nakikita ang 10m Sentinel-2 dito${delta}. Paanyaya itong suriin pa, hindi patunay na nawawala ang proyekto: ang makikitid o maliliit na istruktura ay maaaring tunay na naitayo ngunit hindi makita sa resolusyon ng satellite.`,
     searchPlaceholder: "Hanapin: pangalan, kontratista, lugar…",
     searchLoading: "Maghanap… (nilo-load ang buong talaan)",
+
+    contractorsNav: "Kontratista",
+    contractorsKicker: "PCAB Resolution 075, s. 2025 · pampublikong talaan",
+    contractorsTitle: "Siyam na kompanya ang nawalan ng lisensiya. Nasa mapa pa rin ang mga sityo nila.",
+    contractorsSub:
+      "Noong 1 Setyembre 2025, binawi ng Philippine Contractors Accreditation Board ang lisensiya ng siyam na kompanya. Nasa pahinang ito ang bawat kontrata ng DPWH sa pampublikong talaan na napanalunan ng mga kompanyang iyon, at kung ano ang ipinapakita ng libreng Sentinel-2 imagery sa kanilang mga natapos na proyekto sa flood control.",
+    contractorsStatFirms: "kompanyang binawian",
+    contractorsStatContracts: "kontrata sa DPWH",
+    contractorsStatValue: "halaga ng kontrata",
+    contractorsStatNotVisible: "walang nakikitang konstruksiyon",
+    contractorsColContracts: "Kontrata",
+    contractorsColValue: "Halaga",
+    contractorsColFlood: "Flood control",
+    contractorsColChecked: "Sinuri mula sa kalawakan",
+    contractorsNoMarker: "Hindi minarkahan ng DPWH bilang binawian ang kompanyang ito sa talaan",
+    contractorsMatchNote:
+      "Ang mga kontrata ay tinutugma sa numero ng rehistro sa PCAB na nasa talaan ng DPWH, kaya ang isang joint venture ay binibilang para sa dalawang partner. Ang marka ng talaan mismo ay kasalukuyang katayuan na inilapat pabalik, at wala ito sa ilang tala, kaya hindi ito pinagkakatiwalaan ng pahinang ito.",
+    contractorsDisclaimer:
+      "Ang pagbawi ng lisensiya ay hakbang administratibo tungkol sa kompanya. Hindi ito hatol sa anumang proyekto sa pahinang ito. Ang basa ng satellite ay may parehong kahulugan tulad sa mapa: ang walang nakikitang konstruksiyon ay paanyaya na tumingin, hindi patunay na nawawala ang proyekto.",
+    contractorsSitesTitle: "Mga natapos na proyekto sa flood control, sinuri mula sa kalawakan",
+    contractorsOpenMap: "Buksan sa mapa",
+
+    floodsNav: "Baha",
+    floodsKicker: "Habagat, 06 hanggang 13 Agosto 2026 · PAGASA at PhilSA",
+    floodsTitle: "Ang mga distritong binaha ngayong buwan, at ang flood control na itinayo doon",
+    floodsSub:
+      "Ayon sa PAGASA, tumama ang habagat sa Ilocos, Cagayan Valley, Abra, Benguet at Zambales mula 6 hanggang 13 Agosto 2026, at minapa ng PhilSA ang lawak ng baha gamit ang Sentinel-1 radar. Ito ang mga distrito ng inhinyeriya ng DPWH sa loob ng lugar na iyon, kasama ang ipinapakita ng satellite sa bawat natapos na proyekto sa flood control.",
+    floodsStatDistricts: "distrito sa lugar ng baha",
+    floodsStatProjects: "sityo ng flood control",
+    floodsStatNotVisible: "walang nakikitang konstruksiyon",
+    floodsStatValue: "halaga, walang nakikitang konstruksiyon",
+    floodsColDistrict: "Distrito",
+    floodsColProjects: "Sityo",
+    floodsColNotVisible: "Walang nakikitang konstruksiyon",
+    floodsColValue: "Halaga",
+    floodsMeasuredNote:
+      "Ang mga sityong ito ay sinuri kung may nakikitang konstruksiyon, hindi kung gumana laban sa baha. Walang numero rito na nagsasabing bumagsak ang isang proyekto.",
+    floodsDisclaimer:
+      "Heograpiko lamang ang pagkakapatong. Hindi ito paratang na bumagsak ang anumang proyekto. Ang flood control ay itinatayo ayon sa pamantayan ng return period, ang 200 mm na ulan sa isang araw ay lampas na sa disenyo ng karamihan, at ang dike ay talagang naglilipat ng tubig pababa. Ang basang ito ay tungkol sa kung nakikita ang konstruksiyon, hindi kung gumana ito.",
+    dataAsOf: "Talaan ng DPWH noong",
+    builtOn: "sinuri at inihanda noong",
   },
 } as const;

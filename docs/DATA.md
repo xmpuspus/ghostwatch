@@ -7,10 +7,14 @@ curl -O https://tulaypinoy.ph/data/highlights.json   # red/green/amber projects 
 curl -O https://tulaypinoy.ph/data/context.json      # inconclusive + not-assessed backdrop (~20 MB)
 curl -O https://tulaypinoy.ph/data/overview.json     # headline counters
 curl -O https://tulaypinoy.ph/data/charts.json       # dashboard series
+curl -O https://tulaypinoy.ph/data/contractors.json  # the nine PCAB-revoked firms and their sites
+curl -O https://tulaypinoy.ph/data/flood_districts.json  # districts in the Aug 2026 flood area
 curl -O https://tulaypinoy.ph/data/manifest.json     # build date + sha256 of each file
 ```
 
-`manifest.json` carries `built_at` (UTC) and a sha256 per file; verify a download with `shasum -a 256 <file>`. The classification inputs are also in the repo: `data/classification/flood_control.csv` is the per-project Sentinel-2 result the tiers derive from, and the DPWH source is pinned to HuggingFace dataset revision `648ea96` (`bettergovph/dpwh-transparency-data`).
+`manifest.json` carries a sha256 per file and two dates that mean different things. `source_date` is the DPWH record itself, from the pinned HuggingFace revision. `built_at` (UTC) is when this repo last ran the satellite reads over that record. The record is older than the bake, so read `source_date` when you want the age of the DPWH data. Check a download with `shasum -a 256 <file>`.
+
+The classification inputs are also in the repo: `data/classification/flood_control.csv` is the per-project Sentinel-2 result the tiers derive from, and the DPWH source is pinned to HuggingFace dataset revision `648ea96` (`bettergovph/dpwh-transparency-data`).
 
 ## highlights.json / context.json
 
@@ -52,7 +56,33 @@ GeoJSON FeatureCollections wrapped in `{"data": ..., "meta": ...}`. `highlights.
 
 ## cases.json
 
-The 50-project Sentinel-2 showcase: per case, before/after composite PNGs (`satellite_url_before/after`), dates, index deltas, and classification. These feed the before/after slider; all other projects open the Esri Wayback historical viewer instead (imagery only, no verdict).
+The Sentinel-2 case gallery. Each case carries before/after composite PNGs (`satellite_url_before/after`), dates, index deltas, and a classification.
+
+Cases come from flood control. They use the same 500m buffer and the same before/after windows as the classification behind the map. So a case carries the tier its marker carries.
+
+`is_limit_case` marks the handful of bridges the gallery keeps on purpose. A narrow span sits below 10m. A blank read there marks the method's limit, and it is no finding.
+
+These feed the before/after slider. Every other project opens the Esri Wayback historical viewer instead, which shows imagery and no verdict.
+
+## contractors.json
+
+The nine firms whose contractor licences PCAB revoked on 2025-09-01, under Resolution 075, s. 2025.
+
+`data.totals` carries the portfolio in aggregate. `data.firms[]` carries one record per firm: `contracts`, `value`, `flood_control_contracts`, `assessed`, a `tiers` breakdown, and `projects[]`. That last list holds the completed flood-control sites that carry a map tier.
+
+The bake matches contracts on the PCAB registration number inside the DPWH `contractor` string. So a joint venture counts for both partners.
+
+The record's own `[REVOKED]` marker is a **current** registry status, stamped backward onto historical rows. DPWH does not apply it evenly. Elite (49128) and YPR (45002) carry no marker although PCAB revoked both, and `marked_revoked_in_record` records that per firm.
+
+A revoked licence is an administrative act about a firm. It is not a finding about any project in the list.
+
+## flood_districts.json
+
+DPWH engineering districts inside the area PAGASA and PhilSA reported as flooded between 6 and 13 August 2026.
+
+`data.event` cites the source and its URL. `data.districts[]` carries per-district counts and the `sites[]` that read `NOT_VISIBLE`.
+
+The overlap is geographic. It is not a claim that any project failed. Engineers build flood control to a return-period standard, a 200 mm day beats most of it by design, and a dike moves water downstream on purpose.
 
 ## Caveats
 

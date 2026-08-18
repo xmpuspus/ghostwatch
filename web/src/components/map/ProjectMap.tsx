@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, CircleMarker, Marker, useMap, useMapEvents } from "react-leaflet";
 import L, { type LatLngBounds, type Map as LeafletMap, type PathOptions } from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert, SatelliteDish, X, Crosshair, Search } from "lucide-react";
+import { MapPin, Building2, Calendar, Banknote, Loader2, TriangleAlert, SatelliteDish, X, Crosshair, Search, ChevronDown } from "lucide-react";
 import {
   MAP_CENTER,
   MAP_ZOOM,
@@ -197,7 +197,10 @@ export default function ProjectMap() {
   const [loading, setLoading] = useState(true);
   const [contextLoading, setContextLoading] = useState(true);
   const [mapStyle, setMapStyle] = useState<MapStyle>("satellite");
-  const [tier, setTier] = useState<VerificationStatus | "ALL">("ALL");
+  // Open on the finding, not on the haystack. "ALL" paints 42,305 markers and
+  // the 480 red ones vanish into the field, so a first-time visitor sees noise
+  // where the page has an answer. The other tiers stay one click away.
+  const [tier, setTier] = useState<VerificationStatus | "ALL">("NOT_VISIBLE");
   const [category, setCategory] = useState<string>("ALL");
   const [cases, setCases] = useState<VerificationResult[]>([]);
   const [waybackReleases, setWaybackReleases] = useState<WaybackRelease[]>([]);
@@ -205,6 +208,8 @@ export default function ProjectMap() {
   const [bounds, setBounds] = useState<LatLngBounds | null>(null);
   const [zoom, setZoom] = useState(MAP_ZOOM);
   const [query, setQuery] = useState("");
+  // Collapsed on a phone, always open from the `sm` breakpoint up.
+  const [panelOpen, setPanelOpen] = useState(false);
   const mapRef = useRef<LeafletMap | null>(null);
   const deepLinkDone = useRef(false);
   const { lang } = useLang();
@@ -470,22 +475,41 @@ export default function ProjectMap() {
         ))}
       </MapContainer>
 
-      {/* Map title + counts (top-left) */}
+      {/* Map title + counts (top-left). On a phone the controls collapse behind
+          the headline: at 390x844 the open panel covered two thirds of the map,
+          so the first thing a mobile visitor saw was a control list. */}
       <div
-        className="absolute left-4 top-4 z-[1000] max-h-[calc(100%-2rem)] overflow-y-auto rounded p-3"
+        className="absolute left-4 right-4 top-4 z-[1000] max-h-[calc(100%-2rem)] w-auto overflow-y-auto rounded p-3 sm:right-auto sm:w-auto"
         style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
       >
-        <p className="instrument-label">{t.mapPanelTitle}</p>
-        <p className="stat-value mt-1 text-lg" style={{ color: "var(--color-text-primary)" }}>
-          {formatNumber(counts.NOT_VISIBLE ?? 0)}
-          <span className="ml-1.5 text-[11px] font-normal" style={{ color: "var(--color-absence)" }}>
-            {t.mapWithNoConstruction}
-          </span>
-        </p>
-        <p className="mt-0.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-          {t.mapAcross(formatPeso(flaggedValue), formatNumber(byCategory.length))}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="instrument-label">{t.mapPanelTitle}</p>
+            <p className="stat-value mt-1 text-lg" style={{ color: "var(--color-text-primary)" }}>
+              {formatNumber(counts.NOT_VISIBLE ?? 0)}
+              <span className="ml-1.5 text-[11px] font-normal" style={{ color: "var(--color-absence)" }}>
+                {t.mapWithNoConstruction}
+              </span>
+            </p>
+            <p className="mt-0.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              {t.mapAcross(formatPeso(flaggedValue), formatNumber(byCategory.length))}
+            </p>
+          </div>
+          <button
+            onClick={() => setPanelOpen((v) => !v)}
+            aria-expanded={panelOpen}
+            aria-label={panelOpen ? "Hide map filters" : "Show map filters"}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded sm:hidden"
+            style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
+          >
+            <ChevronDown
+              size={14}
+              style={{ transform: panelOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }}
+            />
+          </button>
+        </div>
 
+        <div className={panelOpen ? "block" : "hidden sm:block"}>
         {/* Search across every mapped project */}
         <div className="relative mt-3">
           <Search
@@ -597,18 +621,21 @@ export default function ProjectMap() {
         </div>
 
         <p
-          className="mt-3 max-w-[210px] border-t pt-2 text-[10px] leading-snug"
+          className="mt-3 border-t pt-2 text-[10px] leading-snug sm:max-w-[210px]"
           style={{ color: "var(--color-text-muted)", borderColor: "var(--color-border)" }}
         >
           {t.mapPanelNote}
         </p>
+        </div>
       </div>
 
-      {/* Basemap toggle (top-right) */}
+      {/* Basemap toggle. Top-right from `sm` up; on a phone the panel spans the
+          full width up there, so the toggle drops to the bottom-left instead of
+          sitting on top of the panel title. */}
       <div
         role="radiogroup"
         aria-label="Base map style"
-        className="absolute right-4 top-4 z-[1000] flex rounded p-0.5"
+        className="absolute bottom-6 left-4 z-[1000] flex rounded p-0.5 sm:bottom-auto sm:left-auto sm:right-4 sm:top-4"
         style={{ backgroundColor: "var(--glass-bg)", border: "1px solid var(--color-border)" }}
       >
         {(["satellite", "streets", "light"] as MapStyle[]).map((s) => (

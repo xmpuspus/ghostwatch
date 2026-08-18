@@ -59,12 +59,18 @@ def test_highlights_contains_only_highlight_tiers():
 
 
 def test_manifest_lists_all_baked_files():
+    """Every file bake_projects.py writes gets a hash, so validate_data.py can
+    catch a file edited after the bake. cases.json joined this list when the
+    gallery moved off the legacy bridges-only script."""
     manifest = json.loads((DATA / "manifest.json").read_text())
     assert set(manifest["sha256"]) == {
         "highlights.json",
         "context.json",
         "overview.json",
         "charts.json",
+        "contractors.json",
+        "flood_districts.json",
+        "cases.json",
     }
     assert manifest["built_at"]
     assert manifest["not_visible_count"] > 0
