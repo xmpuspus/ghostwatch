@@ -4,14 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { useLang } from "@/lib/lang";
+import { STRINGS, useLang } from "@/lib/lang";
 
 const NAV = [
   { href: "/map", label: "Map" },
+  { href: "/floods", label: "Floods", key: "floodsNav" },
+  { href: "/contractors", label: "Contractors", key: "contractorsNav" },
   { href: "/verify", label: "Verify" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/methodology", label: "Methodology" },
-];
+] as const;
 
 function Wordmark() {
   return (
@@ -46,6 +48,12 @@ export default function Header() {
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
 
+  // Only the two new routes carry translated labels so far; the rest read the
+  // same in both languages.
+  const t = STRINGS[lang];
+  const labelOf = (item: (typeof NAV)[number]) =>
+    "key" in item ? t[item.key as "floodsNav" | "contractorsNav"] : item.label;
+
   return (
     <header
       className="fixed inset-x-0 top-0 z-50"
@@ -73,7 +81,7 @@ export default function Header() {
                       : "var(--color-text-muted)",
                   }}
                 >
-                  {item.label}
+                  {labelOf(item)}
                 </span>
                 <span
                   className="absolute inset-x-2 -bottom-px h-[2px] transition-opacity duration-200"
@@ -155,7 +163,7 @@ export default function Header() {
                         : "var(--color-text-secondary)",
                     }}
                   >
-                    {item.label}
+                    {labelOf(item)}
                   </span>
                 </Link>
               );

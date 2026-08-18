@@ -162,11 +162,13 @@ export default function HeroSection() {
             value={statsFailed ? null : stats?.with_coordinates ?? stats?.total_projects ?? 0}
             source="Source: DPWH"
           />
+          {/* Trillions, to match formatCompact on the dashboard. The hero used to
+              read ₱1968.6B for the same number the dashboard called ₱2.0T. */}
           <Ledger
             label="Contract Value"
-            value={statsFailed ? null : stats ? stats.total_value / 1_000_000_000 : 0}
+            value={statsFailed ? null : stats ? stats.total_value / 1_000_000_000_000 : 0}
             prefix="₱"
-            suffix="B"
+            suffix="T"
             decimals={1}
             source="Public record"
             lead
@@ -181,6 +183,28 @@ export default function HeroSection() {
             label="Regions Covered"
             value={statsFailed ? null : stats?.regions_covered ?? 0}
             source="Nationwide"
+          />
+        </motion.div>
+
+        {/* Two entry points that answer a question someone is asking this month.
+            Each states its own finding, so the link works when it is quoted alone. */}
+        <motion.div
+          custom={5}
+          variants={fadeUp}
+          initial="hidden"
+          animate="show"
+          className="mt-4 grid gap-px border md:grid-cols-2"
+          style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-border)" }}
+        >
+          <Entry
+            href="/floods"
+            kicker="Habagat, 6 to 13 August 2026"
+            title="The districts that flooded in August 2026, and the flood control built there"
+          />
+          <Entry
+            href="/contractors"
+            kicker="PCAB Resolution 075, s. 2025"
+            title="Nine firms lost their licences. Their sites are still on the map."
           />
         </motion.div>
       </div>
@@ -215,6 +239,32 @@ export default function HeroSection() {
         </p>
       </div>
     </section>
+  );
+}
+
+function Entry({ href, kicker, title }: { href: string; kicker: string; title: string }) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-start justify-between gap-4 px-4 py-4 transition-colors"
+      style={{ backgroundColor: "var(--color-bg)" }}
+    >
+      <span className="min-w-0">
+        <span className="instrument-label block">{kicker}</span>
+        <span
+          className="mt-1.5 block text-[13px] font-medium leading-snug"
+          style={{ color: "var(--color-text-primary)" }}
+        >
+          {title}
+        </span>
+      </span>
+      <ArrowRight
+        size={14}
+        className="mt-5 shrink-0 transition-transform group-hover:translate-x-0.5"
+        style={{ color: "var(--color-accent)" }}
+        aria-hidden
+      />
+    </Link>
   );
 }
 

@@ -1,15 +1,24 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-// Resolved at build time (static export) — the manifest is written by the bake,
-// so this is the true generation date of every number on the site.
+// Resolved at build time (static export) from the manifest the bake writes.
+//
+// Two dates, because they are two different facts and one used to stand in for
+// both. SOURCE_DATE is the DPWH record itself: the pinned HuggingFace revision,
+// which last took a commit on 2026-01-22. BUILT_AT is when this site last ran
+// the satellite reads over that record. Printing only the bake date told readers
+// the DPWH record was months fresher than it is.
 import manifest from "../../../public/data/manifest.json";
 
-const DATA_AS_OF = new Date(manifest.built_at).toLocaleDateString("en-PH", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  timeZone: "Asia/Manila",
-});
+const phDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Manila",
+  });
+
+const SOURCE_AS_OF = phDate((manifest as { source_date?: string }).source_date ?? manifest.built_at);
+const BUILT_AS_OF = phDate(manifest.built_at);
 
 const EXTERNAL = [
   { label: "Source code", href: "https://github.com/xmpuspus/ghostwatch" },
@@ -78,8 +87,8 @@ export default function Footer() {
             className="text-[10px]"
             style={{ color: "var(--color-text-muted)", fontFamily: "var(--font-mono-stack)" }}
           >
-            Data: DPWH transparency dataset, as of {DATA_AS_OF} &middot; Imagery: Copernicus
-            Sentinel-2 &middot; MIT licensed
+            DPWH record as of {SOURCE_AS_OF} &middot; satellite reads baked {BUILT_AS_OF} &middot;
+            Imagery: Copernicus Sentinel-2 &middot; MIT licensed
           </p>
           <p
             className="text-[10px]"

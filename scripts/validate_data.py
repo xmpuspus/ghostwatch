@@ -115,6 +115,143 @@ def check_features(name: str, doc: dict, expect_tiers: set[str]) -> list[dict]:
     return feats
 
 
+def check_contractors(doc: dict, highlights: list[dict]) -> None:
+    """Re-derive every headline on /contractors from the firm records under it."""
+    if "disclaimer" not in doc:
+        err("contractors.json missing disclaimer")
+        return
+    data = doc.get("data") or {}
+    firms = data.get("firms") or []
+    totals = data.get("totals") or {}
+    if not firms:
+        err("contractors.json: no firms — the revoked-licence layer would render empty")
+        return
+    if totals.get("firms") != len(firms):
+        err(f"contractors.json: totals.firms={totals.get('firms')} != {len(firms)} firm records")
+
+    # Totals count each contract once; per-firm records credit a joint venture to
+    # both partners. So a total must never EXCEED the per-firm sum, and it must
+    # never exceed the population it is drawn from.
+    for key, per_firm in (
+        ("assessed", sum(f["assessed"] for f in firms)),
+        ("not_visible", sum(f["tiers"].get("NOT_VISIBLE", 0) for f in firms)),
+        ("verified", sum(f["tiers"].get("VERIFIED", 0) for f in firms)),
+    ):
+        if totals.get(key, 0) > per_firm:
+            err(f"contractors.json: totals.{key}={totals.get(key)} exceeds per-firm sum {per_firm}")
+    if totals.get("assessed", 0) > totals.get("flood_control_contracts", 0):
+        err(
+            f"contractors.json: {totals.get('assessed')} assessed exceeds "
+            f"{totals.get('flood_control_contracts')} flood-control contracts"
+        )
+    if totals.get("contracts", 0) > sum(f["contracts"] for f in firms):
+        err("contractors.json: totals.contracts exceeds the per-firm sum")
+
+    # The page prints money. A peso total nobody re-derives is a number nobody checks.
+    per_firm_value = sum(f["value"] for f in firms)
+    if not (0 < totals.get("value", 0) <= per_firm_value + 1):
+        err(
+            f"contractors.json: totals.value {totals.get('value')} sits outside "
+            f"(0, per-firm sum {per_firm_value}]"
+        )
+    listed_nv_value = sum(
+        p["contract_amount"] or 0
+        for f in firms
+        for p in f["projects"]
+        if p["verification_status"] == "NOT_VISIBLE"
+    )
+    if totals.get("not_visible_value", 0) > listed_nv_value + 1:
+        err(
+            f"contractors.json: not_visible_value {totals.get('not_visible_value')} exceeds "
+            f"the sum of the listed red projects {listed_nv_value}"
+        )
+
+    # Without the baseline the red count reads as evidence against these firms.
+    base = totals.get("baseline") or {}
+    for key in ("firm_not_visible_rate", "site_not_visible_rate"):
+        if not isinstance(base.get(key), (int, float)):
+            err(f"contractors.json: baseline.{key} missing — the page cannot state the comparison")
+
+    # The card prints a tier COUNT from `tiers` and a money figure summed from
+    # `projects`. A NOT_VISIBLE project with no coordinates never reaches
+    # highlights.json, so it would count in one and not the other, and the money
+    # would quietly undercount. Hold the two to the same number.
+    for f in firms:
+        listed = sum(1 for p in f["projects"] if p["verification_status"] == "NOT_VISIBLE")
+        if f["tiers"].get("NOT_VISIBLE", 0) != listed:
+            err(
+                f"contractors.json: {f['pcab_id']} counts "
+                f"{f['tiers'].get('NOT_VISIBLE', 0)} NOT_VISIBLE but lists {listed}"
+            )
+
+    # Every project a firm lists must be a real highlight marker, with the same
+    # tier. The page links each one to /map?id=, so a stale id is a dead link.
+    tier_by_id = {f["properties"]["id"]: f["properties"]["verification_status"] for f in highlights}
+    for f in firms:
+        for p in f["projects"]:
+            if p["id"] not in tier_by_id:
+                err(
+                    f"contractors.json: {f['pcab_id']} lists {p['id']}, absent from highlights.json"
+                )
+            elif tier_by_id[p["id"]] != p["verification_status"]:
+                err(
+                    f"contractors.json: {p['id']} reads {p['verification_status']} here "
+                    f"but {tier_by_id[p['id']]} on the map"
+                )
+    if not _errors:
+        ok(
+            f"contractors.json: {len(firms)} revoked firms, {totals.get('contracts')} contracts, "
+            f"{totals.get('not_visible')} with no construction visible"
+        )
+
+
+def check_flood_districts(doc: dict) -> None:
+    """Re-derive every headline on /floods from the district records under it."""
+    if "disclaimer" not in doc:
+        err("flood_districts.json missing disclaimer")
+        return
+    data = doc.get("data") or {}
+    districts = data.get("districts") or []
+    totals = data.get("totals") or {}
+    if not districts:
+        err("flood_districts.json: no districts")
+        return
+    if not (data.get("event") or {}).get("source_url"):
+        err("flood_districts.json: event carries no source_url")
+    if totals.get("districts") != len(districts):
+        err(f"flood_districts.json: totals.districts={totals.get('districts')} != {len(districts)}")
+
+    # Every aggregate the page prints, not just the red one. Setting the peso
+    # figure to zero used to pass this gate untouched.
+    for key in ("not_visible", "verified", "partial", "projects"):
+        derived = sum(d[key] for d in districts)
+        if totals.get(key) != derived:
+            err(f"flood_districts.json: totals.{key}={totals.get(key)} != {derived}")
+    derived_value = sum(d["not_visible_value"] for d in districts)
+    if abs(totals.get("not_visible_value", 0) - derived_value) > 1:
+        err(
+            f"flood_districts.json: totals.not_visible_value="
+            f"{totals.get('not_visible_value')} != {derived_value}"
+        )
+    for d in districts:
+        if len(d["sites"]) != d["not_visible"]:
+            err(
+                f"flood_districts.json: {d['district']} claims {d['not_visible']} "
+                f"but lists {len(d['sites'])} sites"
+            )
+        for s in d["sites"]:
+            if s["verification_status"] != "NOT_VISIBLE":
+                err(
+                    f"flood_districts.json: {s['id']} listed as a site "
+                    f"but reads {s['verification_status']}"
+                )
+    if not _errors:
+        ok(
+            f"flood_districts.json: {len(districts)} districts, "
+            f"{totals.get('not_visible')} with no construction visible"
+        )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data-dir", default=str(ROOT / "web" / "public" / "data"))
@@ -129,6 +266,8 @@ def main() -> int:
         "manifest.json",
         "wayback.json",
         "cases.json",
+        "contractors.json",
+        "flood_districts.json",
     ]
     for name in required:
         if not (data_dir / name).exists():
@@ -192,8 +331,17 @@ def main() -> int:
     if len(wayback.get("releases", [])) < 50:
         err("wayback.json: suspiciously few releases")
 
+    # 6. Accountability layers: totals must re-derive from the records under them,
+    #    and each layer must carry its own disclaimer. Both pages name firms and
+    #    places, so a drifting total there is worse than a drifting total anywhere
+    #    else on the site.
+    check_contractors(load(data_dir / "contractors.json"), highlights)
+    check_flood_districts(load(data_dir / "flood_districts.json"))
+
     if manifest.get("built_at") is None:
         err("manifest.built_at missing")
+    if not manifest.get("source_date"):
+        err("manifest.source_date missing — the footer would print the bake date as the data date")
 
     print()
     if _errors:

@@ -57,12 +57,21 @@ export interface VerificationResult {
   after_date: string;
   ndbi_change: number;
   ndvi_change: number;
-  bsi_change: number;
+  // null when the BSI could not be read for a period. Serializing it as 0.0
+  // made missing data look like a measured neutral result.
+  bsi_change: number | null;
   classification: VerificationStatus;
   confidence: number;
   satellite_url_before: string | null;
   satellite_url_after: string | null;
   data_source?: "optical" | "sar_proxy";
+  project_type?: ProjectType | null;
+  // True for the bridges the gallery carries on purpose. A narrow span sits
+  // below 10m, so a blank read there is the method's limit, not a finding.
+  is_limit_case?: boolean;
+  // What this project's marker reads on the map. The gallery re-measures each
+  // site, so a borderline read can land one tier away. The card shows both.
+  map_tier?: VerificationStatus | null;
 }
 
 export interface SatelliteOverview {

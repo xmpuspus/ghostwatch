@@ -34,6 +34,11 @@ export function useLang() {
   return useContext(LangContext);
 }
 
+// The dictionary is `as const`, so STRINGS.en and STRINGS.tl carry different
+// literal types. A component that takes the active dictionary as a prop needs
+// this union, never STRINGS["en"] alone.
+export type Strings = (typeof STRINGS)[Lang];
+
 export const STRINGS = {
   en: {
     heroKicker: "Open source · DPWH infrastructure · Sentinel-2",
@@ -61,6 +66,63 @@ export const STRINGS = {
       `Reported complete, but 10m Sentinel-2 shows no new built-up here${delta}. That is a prompt to look closer, not proof the project is missing: narrow or small structures can be genuinely built yet sit below optical resolution.`,
     searchPlaceholder: "Search title, contractor, place…",
     searchLoading: "Search projects… (loading full record)",
+
+    contractorsNav: "Contractors",
+    contractorsKicker: "PCAB Resolution 075, s. 2025 · public record",
+    contractorsTitle: "Nine firms lost their licences. Their sites are still on the map.",
+    contractorsSub:
+      "On 1 September 2025 the Philippine Contractors Accreditation Board revoked the contractor licences of nine firms. This page holds every DPWH contract in the public record that those firms won, and what free Sentinel-2 imagery shows at their completed flood-control sites.",
+    contractorsBaseline: (firmRate: string, siteRate: string, firmVis: string, siteVis: string) =>
+      `Read this before the counts below. Across their assessed flood-control sites these nine firms show no construction at ${firmRate}, against ${siteRate} for every assessed site in the country. Construction is visible at ${firmVis} of theirs against ${siteVis} nationally. On this measure the satellite record for these firms is no worse than the national picture, and the counts below are not evidence against them.`,
+    contractorsMeasuredNote:
+      "Contract value covers every DPWH category. The red count covers completed flood-control sites only, so the two tiles do not share a denominator.",
+    contractorsStatFirms: "firms struck off",
+    contractorsStatContracts: "DPWH contracts",
+    contractorsStatValue: "contract value",
+    contractorsStatNotVisible: "no construction visible",
+    contractorsRecap: (fc: string, fcValue: string, assessed: string, vis: string, nv: string, nvValue: string) =>
+      `${fc} flood-control contracts worth ${fcValue}. ${assessed} of them carry a satellite read: ${vis} show construction, ${nv} show none, worth ${nvValue}.`,
+    contractorsColContracts: "Contracts",
+    contractorsColValue: "Value",
+    contractorsColFlood: "Flood control",
+    contractorsColChecked: "Checked from space",
+    contractorsNoMarker: "DPWH does not stamp this firm as revoked in the record",
+    contractorsMatchNote:
+      "Contracts are matched on the PCAB registration number in the DPWH record, so a joint venture counts for both partners. The record's own revoked marker is a current status applied backward, and it is missing on some rows, so this page never relies on it.",
+    contractorsDisclaimer:
+      "A revoked licence is an administrative act about a firm. It is not a finding about any project on this page. The satellite reads mean what they mean on the map: no construction visible is a prompt to look closer, never proof a project is missing.",
+    contractorsSitesTitle: "Completed flood-control sites, checked from space",
+    contractorsOpenMap: "Open on the map",
+    contractorsLoadFail: "The contractor record failed to load. Reload to retry.",
+    contractorsNoSites: "No completed flood-control site by this firm carries a clear satellite read.",
+    contractorsSourceLine: (source: string) =>
+      `Source: ${source}. Contract records from the public DPWH transparency dataset.`,
+
+    floodsNav: "Floods",
+    floodsKicker: "Habagat, 06 to 13 August 2026 · PAGASA and PhilSA",
+    floodsTitle: "The districts that flooded in August 2026, and the flood control built there",
+    floodsSub:
+      "PAGASA put the southwest monsoon over Ilocos, Cagayan Valley, Abra, Benguet and Zambales from 6 to 13 August 2026, and PhilSA mapped the flood extent from Sentinel-1 radar. These are the DPWH engineering districts in those provinces, with what the satellite shows at each completed flood-control site in them.",
+    floodsStatDistricts: "districts the monsoon hit",
+    floodsStatProjects: "flood-control sites in them",
+    floodsStatNotVisible: "no construction visible",
+    floodsStatValue: "value, no construction visible",
+    floodsColDistrict: "District",
+    floodsColProjects: "Sites",
+    floodsColNotVisible: "No construction visible",
+    floodsColValue: "Value",
+    floodsNoRedSites: (n: string) =>
+      `No completed site in this district reads as no construction visible. Of its ${n} flood-control sites the rest read as visible, partial, or too unclear to call, and this list holds only the red ones.`,
+    floodsLoadFail: "The flood-district record failed to load. Reload to retry.",
+    floodsSourceLine: (source: string) => `Flood extent: ${source}.`,
+    floodsSourceLink: "PhilSA flood maps",
+    floodsSourceTail: "Project records from the public DPWH transparency dataset.",
+    floodsMeasuredNote:
+      "Sites are matched by DPWH engineering district, never against the mapped water itself, so a site here sits in a district the monsoon hit and not necessarily under the flood. They were checked for visible construction, never for flood performance. No number on this page says a project failed.",
+    floodsDisclaimer:
+      "The overlap is geographic. It is not a claim that any project failed. Engineers build flood control to a return-period standard, a 200 mm day beats most of them by design, and a dike moves water downstream on purpose. These reads answer whether construction is visible, never whether it worked.",
+    dataAsOf: "DPWH record as of",
+    builtOn: "checked and baked on",
   },
   tl: {
     heroKicker: "Open source · Imprastraktura ng DPWH · Sentinel-2",
@@ -88,5 +150,62 @@ export const STRINGS = {
       `Naiulat na tapos, ngunit walang bagong built-up na nakikita ang 10m Sentinel-2 dito${delta}. Paanyaya itong suriin pa, hindi patunay na nawawala ang proyekto: ang makikitid o maliliit na istruktura ay maaaring tunay na naitayo ngunit hindi makita sa resolusyon ng satellite.`,
     searchPlaceholder: "Hanapin: pangalan, kontratista, lugar…",
     searchLoading: "Maghanap… (nilo-load ang buong talaan)",
+
+    contractorsNav: "Kontratista",
+    contractorsKicker: "PCAB Resolution 075, s. 2025 · pampublikong talaan",
+    contractorsTitle: "Siyam na kompanya ang nawalan ng lisensiya. Nasa mapa pa rin ang mga sityo nila.",
+    contractorsSub:
+      "Noong 1 Setyembre 2025, binawi ng Philippine Contractors Accreditation Board ang lisensiya ng siyam na kompanya. Nasa pahinang ito ang bawat kontrata ng DPWH sa pampublikong talaan na napanalunan ng mga kompanyang iyon, at kung ano ang ipinapakita ng libreng Sentinel-2 imagery sa kanilang mga natapos na proyekto sa flood control.",
+    contractorsBaseline: (firmRate: string, siteRate: string, firmVis: string, siteVis: string) =>
+      `Basahin ito bago ang mga bilang sa ibaba. Sa kanilang mga nasuring proyekto sa flood control, walang nakikitang konstruksiyon sa ${firmRate}, laban sa ${siteRate} para sa bawat nasuring sityo sa buong bansa. May nakikitang konstruksiyon sa ${firmVis} ng kanila laban sa ${siteVis} sa buong bansa. Sa sukat na ito, ang talaan ng satellite para sa mga kompanyang ito ay hindi mas masahol kaysa sa pambansang larawan, at ang mga bilang sa ibaba ay hindi katibayan laban sa kanila.`,
+    contractorsMeasuredNote:
+      "Ang halaga ng kontrata ay sumasaklaw sa bawat kategorya ng DPWH. Ang pulang bilang ay para lamang sa natapos na proyekto sa flood control, kaya hindi pareho ang batayan ng dalawang tile.",
+    contractorsStatFirms: "kompanyang binawian",
+    contractorsStatContracts: "kontrata sa DPWH",
+    contractorsStatValue: "halaga ng kontrata",
+    contractorsStatNotVisible: "walang nakikitang konstruksiyon",
+    contractorsRecap: (fc: string, fcValue: string, assessed: string, vis: string, nv: string, nvValue: string) =>
+      `${fc} kontrata sa flood control na nagkakahalaga ng ${fcValue}. ${assessed} rito ang may basa ng satellite: ${vis} ang may nakikitang konstruksiyon, ${nv} ang wala, nagkakahalaga ng ${nvValue}.`,
+    contractorsColContracts: "Kontrata",
+    contractorsColValue: "Halaga",
+    contractorsColFlood: "Flood control",
+    contractorsColChecked: "Sinuri mula sa kalawakan",
+    contractorsNoMarker: "Hindi minarkahan ng DPWH bilang binawian ang kompanyang ito sa talaan",
+    contractorsMatchNote:
+      "Ang mga kontrata ay tinutugma sa numero ng rehistro sa PCAB na nasa talaan ng DPWH, kaya ang isang joint venture ay binibilang para sa dalawang partner. Ang marka ng talaan mismo ay kasalukuyang katayuan na inilapat pabalik, at wala ito sa ilang tala, kaya hindi ito pinagkakatiwalaan ng pahinang ito.",
+    contractorsDisclaimer:
+      "Ang pagbawi ng lisensiya ay hakbang administratibo tungkol sa kompanya. Hindi ito hatol sa anumang proyekto sa pahinang ito. Ang basa ng satellite ay may parehong kahulugan tulad sa mapa: ang walang nakikitang konstruksiyon ay paanyaya na tumingin, hindi patunay na nawawala ang proyekto.",
+    contractorsSitesTitle: "Mga natapos na proyekto sa flood control, sinuri mula sa kalawakan",
+    contractorsOpenMap: "Buksan sa mapa",
+    contractorsLoadFail: "Hindi na-load ang talaan ng kontratista. I-reload upang subukan muli.",
+    contractorsNoSites: "Walang natapos na proyekto sa flood control ng kompanyang ito ang may malinaw na basa ng satellite.",
+    contractorsSourceLine: (source: string) =>
+      `Pinagmulan: ${source}. Talaan ng kontrata mula sa pampublikong DPWH transparency dataset.`,
+
+    floodsNav: "Baha",
+    floodsKicker: "Habagat, 06 hanggang 13 Agosto 2026 · PAGASA at PhilSA",
+    floodsTitle: "Ang mga distritong binaha noong Agosto 2026, at ang flood control na itinayo doon",
+    floodsSub:
+      "Ayon sa PAGASA, tumama ang habagat sa Ilocos, Cagayan Valley, Abra, Benguet at Zambales mula 6 hanggang 13 Agosto 2026, at minapa ng PhilSA ang lawak ng baha gamit ang Sentinel-1 radar. Ito ang mga distrito ng inhinyeriya ng DPWH sa loob ng lugar na iyon, kasama ang ipinapakita ng satellite sa bawat natapos na proyekto sa flood control.",
+    floodsStatDistricts: "distritong tinamaan ng habagat",
+    floodsStatProjects: "sityo ng flood control sa loob",
+    floodsStatNotVisible: "walang nakikitang konstruksiyon",
+    floodsStatValue: "halaga, walang nakikitang konstruksiyon",
+    floodsColDistrict: "Distrito",
+    floodsColProjects: "Sityo",
+    floodsColNotVisible: "Walang nakikitang konstruksiyon",
+    floodsColValue: "Halaga",
+    floodsNoRedSites: (n: string) =>
+      `Walang natapos na sityo sa distritong ito ang nababasa bilang walang nakikitang konstruksiyon. Sa ${n} nitong sityo ng flood control, ang iba ay nakikita, bahagya, o hindi malinaw, at ang listahang ito ay para lamang sa mga pula.`,
+    floodsLoadFail: "Hindi na-load ang talaan ng distrito. I-reload upang subukan muli.",
+    floodsSourceLine: (source: string) => `Lawak ng baha: ${source}.`,
+    floodsSourceLink: "Mga mapa ng baha ng PhilSA",
+    floodsSourceTail: "Talaan ng proyekto mula sa pampublikong DPWH transparency dataset.",
+    floodsMeasuredNote:
+      "Ang mga sityo ay tinutugma ayon sa distrito ng inhinyeriya ng DPWH, hindi laban sa nakamapang tubig mismo, kaya ang sityo rito ay nasa distritong tinamaan ng habagat at hindi tiyak na nasa ilalim ng baha. Sinuri ang mga ito kung may nakikitang konstruksiyon, hindi kung gumana laban sa baha. Walang numero rito na nagsasabing bumagsak ang isang proyekto.",
+    floodsDisclaimer:
+      "Heograpiko lamang ang pagkakapatong. Hindi ito paratang na bumagsak ang anumang proyekto. Ang flood control ay itinatayo ayon sa pamantayan ng return period, ang 200 mm na ulan sa isang araw ay lampas na sa disenyo ng karamihan, at ang dike ay talagang naglilipat ng tubig pababa. Ang basang ito ay tungkol sa kung nakikita ang konstruksiyon, hindi kung gumana ito.",
+    dataAsOf: "Talaan ng DPWH noong",
+    builtOn: "sinuri at inihanda noong",
   },
 } as const;

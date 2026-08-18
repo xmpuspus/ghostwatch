@@ -9,7 +9,7 @@ export const VERIFICATION_COLORS: Record<string, string> = {
 
 export const VERIFICATION_LABELS: Record<string, string> = {
   VERIFIED: "Construction visible",
-  PARTIAL: "Partial change",
+  PARTIAL: "Partial signal",
   INCONCLUSIVE: "No clear change",
   NOT_VISIBLE: "No construction visible",
   UNVERIFIED: "Not yet checked",

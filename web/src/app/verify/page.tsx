@@ -28,6 +28,10 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 
 const MIN_CONFIDENCE_OPTIONS = [0, 0.2, 0.3];
 
+// A bridge sits in the context tier, so the map never assessed it. Saying two
+// passes disagreed about it would invent a measurement that never happened.
+const ASSESSED_TIERS = new Set(["VERIFIED", "NOT_VISIBLE", "PARTIAL", "INCONCLUSIVE"]);
+
 export default function VerifyPage() {
   return (
     <Suspense
@@ -46,6 +50,9 @@ function VerifyContent() {
   const [loading, setLoading] = useState(true);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [notInShowcase, setNotInShowcase] = useState(false);
+  // A fetch failure is not "no cases match this filter". The two read the same
+  // on screen and mean opposite things.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [classFilter, setClassFilter] = useState<string>("ALL");
   const [minConf, setMinConf] = useState(0);
   const detailRef = useRef<HTMLDivElement>(null);
@@ -63,7 +70,10 @@ function VerifyContent() {
           else setNotInShowcase(true);
         }
       })
-      .catch(() => setCases([]))
+      .catch(() => {
+        setCases([]);
+        setLoadFailed(true);
+      })
       .finally(() => setLoading(false));
   }, [preselectedId]);
 
@@ -86,8 +96,9 @@ function VerifyContent() {
     }
   }, []);
 
+  // dvh, not vh: a mobile URL bar resizes the viewport and vh does not follow it.
   return (
-    <div className="flex flex-col pt-14 md:h-screen md:flex-row md:overflow-hidden">
+    <div className="flex flex-col pt-14 md:h-[100dvh] md:flex-row md:overflow-hidden">
       {/* List column */}
       <div
         className="flex w-full shrink-0 flex-col border-b md:w-[340px] md:border-b-0 md:border-r"
@@ -103,9 +114,10 @@ function VerifyContent() {
             Satellite case studies
           </h1>
           <p className="mt-1 text-xs leading-snug" style={{ color: "var(--color-text-muted)" }}>
-            Detailed Sentinel-2 before/after reads on completed bridges, where the imagery is clear
-            enough to read directly. The map&apos;s presence/absence calls come from the same
-            change-detection, run at scale. Pick a case to see its read.
+            Sentinel-2 before/after reads on completed flood-control sites, drawn from the same
+            classification that colours the map. Each case is measured again on its own, so where
+            the two passes land one tier apart the card says so. A few bridges ride along, marked
+            limit case, to show where 10m optical stops. Pick a case to see its read.
           </p>
         </div>
 
@@ -130,9 +142,12 @@ function VerifyContent() {
                 color: "var(--color-text-primary)",
               }}
             >
+              {/* NOT_VISIBLE was missing here while the gallery held only
+                  bridges, which never read that tier. Flood-control cases do. */}
               <option value="ALL">All</option>
-              <option value="VERIFIED">Construction detected</option>
-              <option value="PARTIAL">Partial change</option>
+              <option value="NOT_VISIBLE">No construction visible</option>
+              <option value="VERIFIED">Construction visible</option>
+              <option value="PARTIAL">Partial signal</option>
               <option value="INCONCLUSIVE">No clear change</option>
             </select>
           </div>
@@ -165,7 +180,9 @@ function VerifyContent() {
         </div>
 
         {/* Case list */}
-        <div className="md:flex-1 md:overflow-y-auto">
+        {/* On a phone the list stacks above the detail. Unbounded, 50 cases put
+            roughly 5,500px of list between the visitor and the first image. */}
+        <div className="max-h-[55vh] overflow-y-auto md:max-h-none md:flex-1">
           {loading && (
             <div className="space-y-2 p-4">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -177,10 +194,12 @@ function VerifyContent() {
           {!loading && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
               <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                No cases match this filter
+                {loadFailed ? "The case data failed to load. Reload to retry." : "No cases match this filter"}
               </p>
               <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                Inconclusive checks have no detection confidence. Try &ldquo;Any&rdquo;.
+                {loadFailed
+                  ? "Nothing here is filtered out; the file did not arrive."
+                  : "Inconclusive checks have no detection confidence. Try “Any”."}
               </p>
             </div>
           )}
@@ -224,6 +243,7 @@ function VerifyContent() {
                   <p className="coord text-[10px]" style={{ color: "var(--color-text-muted)" }}>
                     {c.project_id}
                     {c.contract_amount ? ` · ${formatPeso(c.contract_amount)}` : ""}
+                    {c.is_limit_case ? " · limit case" : ""}
                   </p>
                 </button>
               );
@@ -275,6 +295,44 @@ function VerifyContent() {
                 </span>
               </div>
 
+              {/* The gallery re-measures each site on its own. A borderline read
+                  can land one tier from the marker, and hiding that would put a
+                  card next to a map dot it silently contradicts. Say it instead,
+                  because the gap IS the method's error bar. */}
+              {selected.map_tier &&
+                ASSESSED_TIERS.has(selected.map_tier) &&
+                selected.map_tier !== selected.classification && (
+                <div
+                  className="flex items-start gap-2 rounded-sm border-l-2 px-3 py-2 text-xs leading-snug"
+                  style={{
+                    borderColor: "var(--color-inconclusive)",
+                    backgroundColor: "var(--color-surface)",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  <HelpCircle
+                    size={14}
+                    className="mt-0.5 shrink-0"
+                    style={{ color: "var(--color-inconclusive)" }}
+                  />
+                  <span>
+                    This site&apos;s marker on the map reads{" "}
+                    <strong style={{ color: VERIFICATION_COLORS[selected.map_tier] ?? "#768d87" }}>
+                      {VERIFICATION_LABELS[selected.map_tier] ?? selected.map_tier}
+                    </strong>
+                    . The gallery measured it again on its own and got{" "}
+                    <strong
+                      style={{ color: VERIFICATION_COLORS[selected.classification] ?? "#768d87" }}
+                    >
+                      {VERIFICATION_LABELS[selected.classification] ?? selected.classification}
+                    </strong>
+                    . Two honest passes over the same 10m imagery land one tier apart on a
+                    borderline site. That gap is the width of what this method can tell you, and
+                    the images below are the evidence either way.
+                  </span>
+                </div>
+              )}
+
               <BeforeAfterSlider
                 beforeUrl={selected.satellite_url_before}
                 afterUrl={selected.satellite_url_after}
@@ -284,7 +342,9 @@ function VerifyContent() {
                 classification={selected.classification}
               />
 
-              {/* Why-it-looks-blank note, right where the blank image prompts the question */}
+              {/* Why-it-looks-blank note, right where the blank image prompts the
+                  question. A bridge and a flood-control site read blank for
+                  different reasons, so the note says which one applies. */}
               {selected.classification === "INCONCLUSIVE" && (
                 <div
                   className="-mt-2 flex items-start gap-2 rounded-sm border-l-2 px-3 py-2 text-xs leading-snug"
@@ -300,9 +360,9 @@ function VerifyContent() {
                     style={{ color: "var(--color-inconclusive)" }}
                   />
                   <span>
-                    No clear construction signal at 10m resolution. For a narrow span over water this
-                    is expected, and does not mean the bridge is missing. Reported as inconclusive,
-                    never as a claim about the project.
+                    {selected.is_limit_case
+                      ? "No clear construction signal at 10m resolution. This case sits in the gallery to show where the method stops: a narrow span over water is below what free optical imagery resolves, so a blank read here says nothing about the bridge."
+                      : "No clear construction signal at 10m resolution. Concrete laid on an already-bare riverbank moves the built-up index very little, so a blank read is common even where the work exists. Reported as inconclusive, never as a claim about the project."}
                   </span>
                 </div>
               )}
@@ -339,7 +399,7 @@ function VerifyContent() {
                   <MetaField label="After" value={selected.after_date} mono />
                   <MetaField label="NDBI Δ" value={fmtDelta(selected.ndbi_change)} mono />
                   <MetaField label="NDVI Δ" value={fmtDelta(selected.ndvi_change)} mono />
-                  <MetaField label="BSI Δ" value={fmtDelta(selected.bsi_change)} mono />
+                  <MetaField label="BSI Δ" value={selected.bsi_change === null ? "not read" : fmtDelta(selected.bsi_change)} mono />
                 </dl>
               </div>
 

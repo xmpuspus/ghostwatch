@@ -23,13 +23,20 @@ export default function CountUp({
   useEffect(() => {
     // Never render NaN/Infinity if a stat ever arrives missing (e.g. partial fetch).
     const target = Number.isFinite(end) ? end : 0;
+    // Group thousands, so the hero prints 42,305 like every other surface does.
+    // toFixed alone printed 42305 next to a map panel reading 42,305.
+    const fmt = (n: number) =>
+      n.toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
 
     // Respect reduced-motion: skip the count animation, show the final value.
     if (
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
-      setDisplay(target.toFixed(decimals));
+      setDisplay(fmt(target));
       return;
     }
 
@@ -41,7 +48,7 @@ export default function CountUp({
       // ease-out expo
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
       const current = eased * target;
-      setDisplay(current.toFixed(decimals));
+      setDisplay(fmt(current));
 
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
