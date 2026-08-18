@@ -50,6 +50,9 @@ function VerifyContent() {
   const [loading, setLoading] = useState(true);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [notInShowcase, setNotInShowcase] = useState(false);
+  // A fetch failure is not "no cases match this filter". The two read the same
+  // on screen and mean opposite things.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [classFilter, setClassFilter] = useState<string>("ALL");
   const [minConf, setMinConf] = useState(0);
   const detailRef = useRef<HTMLDivElement>(null);
@@ -67,7 +70,10 @@ function VerifyContent() {
           else setNotInShowcase(true);
         }
       })
-      .catch(() => setCases([]))
+      .catch(() => {
+        setCases([]);
+        setLoadFailed(true);
+      })
       .finally(() => setLoading(false));
   }, [preselectedId]);
 
@@ -188,10 +194,12 @@ function VerifyContent() {
           {!loading && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
               <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                No cases match this filter
+                {loadFailed ? "The case data failed to load. Reload to retry." : "No cases match this filter"}
               </p>
               <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                Inconclusive checks have no detection confidence. Try &ldquo;Any&rdquo;.
+                {loadFailed
+                  ? "Nothing here is filtered out; the file did not arrive."
+                  : "Inconclusive checks have no detection confidence. Try “Any”."}
               </p>
             </div>
           )}
