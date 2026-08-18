@@ -515,7 +515,11 @@ def build_contractors(full: pd.DataFrame, df: pd.DataFrame) -> dict:
         if rows.empty:
             continue
         cat = rows["category"].astype(str).str.strip().str.lower()
-        flood = rows[cat.isin(CLASSIFIED_CATEGORIES)]
+        # Completed only, the same boundary /floods uses. The card is headed
+        # "Completed flood-control sites", and an ongoing project reading
+        # construction_detected would otherwise land under that heading.
+        completed = rows["status"].map(norm_status) == "COMPLETED"
+        flood = rows[cat.isin(CLASSIFIED_CATEGORIES) & completed]
         budget = pd.to_numeric(rows["budget"], errors="coerce")
         flood_budget = pd.to_numeric(flood["budget"], errors="coerce")
 
@@ -574,7 +578,9 @@ def build_contractors(full: pd.DataFrame, df: pd.DataFrame) -> dict:
     all_ids = set(REVOKED_FIRMS)
     matched = full[full["_pcab"].map(lambda s: bool(s & all_ids))]
     mcat = matched["category"].astype(str).str.strip().str.lower()
-    mflood = matched[mcat.isin(CLASSIFIED_CATEGORIES)]
+    mflood = matched[
+        mcat.isin(CLASSIFIED_CATEGORIES) & (matched["status"].map(norm_status) == "COMPLETED")
+    ]
     seen_tiers: dict[str, int] = {}
     seen_nv_value = 0.0
     for pid in {str(c) for c in mflood["contractId"]}:

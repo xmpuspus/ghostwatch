@@ -126,6 +126,16 @@ def test_firm_tier_counts_match_the_project_list_they_price():
         assert f["tiers"].get("NOT_VISIBLE", 0) == listed, f"{f['pcab_id']} count/list drift"
 
 
+def test_firm_projects_are_completed_only():
+    """The card is headed "Completed flood-control sites". An ongoing project
+    reading construction_detected would otherwise land under that heading."""
+    feats = json.loads((DATA / "highlights.json").read_text())["data"]["features"]
+    status = {f["properties"]["id"]: f["properties"]["status"] for f in feats}
+    for f in contractors()["data"]["firms"]:
+        for p in f["projects"]:
+            assert status.get(p["id"]) == "COMPLETED", f"{p['id']} reads {status.get(p['id'])}"
+
+
 def test_firm_project_lists_hold_only_highlight_tiers():
     """A firm card links each project to /map?id=, and only highlight tiers are
     on that map. A context-tier project there would be a dead link."""

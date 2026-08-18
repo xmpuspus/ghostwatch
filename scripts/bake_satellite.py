@@ -438,9 +438,11 @@ def main():
     lost = len(ids) - len(results)
     if lost:
         print(f"\n{lost} of {len(ids)} cases produced no result.")
-        if lost > len(ids) * 0.2:
+        if lost:
             raise SystemExit(
                 f"Refusing to overwrite the gallery: {lost} of {len(ids)} cases failed. "
+                "A smaller gallery is a quieter failure than a loud one, and the "
+                "reproducibility figures on the site are pinned to the case count. "
                 "Fix the failures or rerun; the committed gallery is untouched."
             )
 
