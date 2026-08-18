@@ -11,6 +11,15 @@ import type { ContractorsDoc, RevokedFirm } from "@/types/accountability";
 
 const TIER_ORDER = ["NOT_VISIBLE", "VERIFIED", "PARTIAL"] as const;
 
+// Read the active dictionary. Hardcoding these left English badges on an
+// otherwise Tagalog page.
+function tierText(t: Strings, tier: string): string {
+  if (tier === "NOT_VISIBLE") return t.tierNotVisible;
+  if (tier === "VERIFIED") return t.tierVerified;
+  if (tier === "PARTIAL") return t.tierPartial;
+  return tier;
+}
+
 export default function ContractorsPage() {
   const { lang } = useLang();
   const t = STRINGS[lang];
@@ -195,7 +204,7 @@ function FirmCard({
                     style={{ backgroundColor: VERIFICATION_COLORS[tier] }}
                   />
                   <span style={{ color: "var(--color-text-secondary)" }}>
-                    {n} {TIER_TEXT[tier]}
+                    {n} {tierText(t, tier)}
                   </span>
                 </span>
               );
@@ -240,7 +249,7 @@ function FirmCard({
                         border: `1px solid ${VERIFICATION_COLORS[p.verification_status]}`,
                       }}
                     >
-                      {TIER_TEXT[p.verification_status as keyof typeof TIER_TEXT] ?? p.verification_status}
+                      {tierText(t, p.verification_status)}
                     </span>
                     <Link
                       href={`/map?id=${p.id}`}
@@ -260,12 +269,6 @@ function FirmCard({
     </div>
   );
 }
-
-const TIER_TEXT: Record<string, string> = {
-  NOT_VISIBLE: "no construction visible",
-  VERIFIED: "construction visible",
-  PARTIAL: "partial signal",
-};
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
