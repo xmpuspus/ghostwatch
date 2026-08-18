@@ -127,6 +127,10 @@ REVOKED_DISCLAIMER = (
 # coverage, so a reader can ask what the satellite saw at flood-control sites in
 # the places that just flooded.
 #
+# The match is ADMINISTRATIVE, never spatial. A site qualifies because its DPWH
+# engineering district sits in a province a source names, and nothing here tests
+# its coordinates against the mapped water. The page says so under its own tiles.
+#
 # The overlap is geographic, and it is NOT a claim that any project failed.
 # Engineers build flood-control works to a return-period design standard, and a
 # 200 mm day beats most of them by design. A dike also moves water downstream on
@@ -135,6 +139,9 @@ FLOOD_EVENT = {
     "name": "Southwest monsoon (habagat), 06-13 August 2026",
     "start": "2026-08-06",
     "end": "2026-08-13",
+    # PhilSA posted this on 11 August 2026. Philippine storm names cycle every
+    # four years, so "Maymay" in the URL is Maymay (Kujira) of August 2026, not
+    # the 2022 depression of the same name.
     "source": "PAGASA advisories; PhilSA Sentinel-1 flood extents, 06 and 09 August 2026",
     "source_url": (
         "https://philsa.gov.ph/news/satellite-data-show-flood-extents-in-regions-1-and-2-"
